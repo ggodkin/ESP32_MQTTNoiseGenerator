@@ -1,0 +1,53 @@
+Parameter Table
+===============
+
+This table lists all tunable parameters, their purpose, recommended minimum and maximum values, and default settings.
+
+Master Gain
+-----------
+gainMinDb: min -80, max -20, default -60
+gainMaxDb: min -12, max 0, default -3
+
+Gain Slew
+---------
+slewRate: min 0.0005, max 0.01, default 0.002
+
+Pink Noise
+----------
+a1: min 0.0, max 1.0, default Stenzel coefficient
+a2: min 0.0, max 1.0, default Stenzel coefficient
+a3: min 0.0, max 1.0, default Stenzel coefficient
+pinkGain: min 0.1, max 5.0, default 1.0
+
+Brown Noise
+-----------
+brownLeak: min 0.9950, max 0.9999, default 0.9995
+
+Blue Noise
+----------
+blueScale: min 0.2, max 1.0, default 0.5
+
+LED System
+----------
+ledMinBrightness: min 0, max 50, default 10
+ledMaxBrightness: min 100, max 255, default 255
+ledGamma: min 1.0, max 3.0, default 2.2
+modeFlashMs: min 50, max 300, default 120
+muteBrightness: min 10, max 100, default 40
+
+Network Timing
+--------------
+heartbeatMs: min 30000, max 300000, default 90000
+wifiRetryMs: min 5000, max 30000, default 15000
+mqttRetryMs: min 2000, max 10000, default 5000
+
+Audio Engine
+------------
+bufferSamples: min 128, max 1024, default 256
+rngSeed: any 32-bit value, default millis()
+
+UI
+--
+encoder range: min 0-20, max 0-200, default 0-63
+button long press: min 500 ms, max 2000 ms, default 1000 ms
+button extra-long: min 2000 ms, max 6000 ms, default 3000 ms

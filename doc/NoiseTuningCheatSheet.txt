@@ -1,0 +1,73 @@
+Noise Tuning Cheat Sheet
+========================
+
+This cheat sheet summarizes the most important tuning parameters for the ESP32 Noise Generator. Use this when adjusting sound character, loudness, smoothness, or LED behavior.
+
+Master Gain
+-----------
+gainMinDb: quietest level, recommended -60 to -40
+gainMaxDb: loudest level, recommended -6 to -3
+Impact: controls overall loudness and headroom
+
+Gain Slew Rate
+--------------
+slewRate: 0.001 to 0.003 recommended
+Impact: smoothness of volume changes, lower = smoother
+
+Pink Noise
+----------
+Coefficients: a1, a2, a3
+pinkGain: normalization
+Impact: coloration of pink noise, deeper or brighter tone
+
+Brown Noise
+-----------
+brownLeak: 0.9985 to 0.9997 recommended
+Impact: rumble depth, drift speed, low-frequency weight
+
+Blue Noise
+----------
+blueScale: 0.4 to 0.6 recommended
+Impact: brightness and harshness of blue noise
+
+LED Volume Bar
+--------------
+ledMinBrightness: 10 to 30
+ledMaxBrightness: 200 to 255
+ledGamma: 2.0 to 2.4
+Impact: visual clarity and smoothness
+
+Mode Flash
+----------
+modeFlashMs: 100 to 150 ms
+Impact: responsiveness of mode change feedback
+
+Mute Behavior
+-------------
+muteBrightness: 20 to 60
+Impact: visibility of mute state
+
+Network Timing
+--------------
+heartbeatMs: 60000 to 120000
+wifiRetryMs: 10000 to 20000
+mqttRetryMs: 3000 to 6000
+Impact: responsiveness vs network load
+
+Audio Buffer
+------------
+bufferSamples: 256 to 512
+Impact: stability vs latency
+
+Recommended Defaults
+--------------------
+gainMinDb: -60
+gainMaxDb: -3
+slewRate: 0.002
+brownLeak: 0.9995
+blueScale: 0.5
+modeFlashMs: 120
+ledGamma: 2.2
+heartbeatMs: 90000
+wifiRetryMs: 15000
+mqttRetryMs: 5000

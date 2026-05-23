@@ -1,0 +1,468 @@
+[
+  {
+    "id": "mqtt_in_gain",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "Gain State",
+    "topic": "bedroom/noise/gain",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 120,
+    "wires": [
+      [
+        "gain_state_to_ui",
+        "fac299c1596bc9d2"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_in_mode",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "Mode State",
+    "topic": "bedroom/noise/mode",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 200,
+    "wires": [
+      [
+        "mode_state_to_ui"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_in_mute",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "Mute State",
+    "topic": "bedroom/noise/mute",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 380,
+    "wires": [
+      [
+        "mute_state_to_ui"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_in_heartbeat",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "Heartbeat",
+    "topic": "bedroom/noise/heartbeat",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 140,
+    "y": 560,
+    "wires": [
+      [
+        "heartbeat_to_ui"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out_gain",
+    "type": "mqtt out",
+    "z": "tab_noise",
+    "name": "Set Gain",
+    "topic": "bedroom/noise/gain/set",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "f6f5c5a8c7bea7e7",
+    "x": 1040,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "mqtt_out_mode",
+    "type": "mqtt out",
+    "z": "tab_noise",
+    "name": "Set Mode",
+    "topic": "bedroom/noise/mode/set",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "f6f5c5a8c7bea7e7",
+    "x": 880,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "mqtt_out_mute",
+    "type": "mqtt out",
+    "z": "tab_noise",
+    "name": "Set Mute",
+    "topic": "bedroom/noise/mute/set",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "f6f5c5a8c7bea7e7",
+    "x": 860,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "ui_gain_slider",
+    "type": "ui_slider",
+    "z": "tab_noise",
+    "name": "Gain",
+    "label": "Gain",
+    "tooltip": "",
+    "group": "ui_group_main",
+    "order": 1,
+    "width": 6,
+    "height": 1,
+    "passthru": false,
+    "outs": "all",
+    "topic": "",
+    "topicType": "str",
+    "min": 0,
+    "max": 20,
+    "step": 1,
+    "className": "",
+    "x": 850,
+    "y": 160,
+    "wires": [
+      [
+        "mqtt_out_gain"
+      ]
+    ]
+  },
+  {
+    "id": "ui_mode_select",
+    "type": "ui_dropdown",
+    "z": "tab_noise",
+    "name": "Mode",
+    "label": "Mode",
+    "tooltip": "",
+    "place": "",
+    "group": "ui_group_main",
+    "order": 2,
+    "width": 6,
+    "height": 1,
+    "passthru": false,
+    "multiple": false,
+    "options": [
+      {
+        "label": "White",
+        "value": "white",
+        "type": "str"
+      },
+      {
+        "label": "Pink",
+        "value": "pink",
+        "type": "str"
+      },
+      {
+        "label": "Brown",
+        "value": "brown",
+        "type": "str"
+      },
+      {
+        "label": "Blue",
+        "value": "blue",
+        "type": "str"
+      }
+    ],
+    "payload": "",
+    "topic": "",
+    "topicType": "str",
+    "className": "",
+    "x": 550,
+    "y": 300,
+    "wires": [
+      [
+        "mqtt_out_mode"
+      ]
+    ]
+  },
+  {
+    "id": "ui_mute_switch",
+    "type": "ui_switch",
+    "z": "tab_noise",
+    "name": "Mute",
+    "label": "Mute",
+    "tooltip": "",
+    "group": "ui_group_main",
+    "order": 3,
+    "width": 6,
+    "height": 1,
+    "passthru": false,
+    "decouple": "true",
+    "topic": "",
+    "topicType": "str",
+    "style": "",
+    "onvalue": "ON",
+    "onvalueType": "str",
+    "onicon": "",
+    "oncolor": "",
+    "offvalue": "OFF",
+    "offvalueType": "str",
+    "officon": "",
+    "offcolor": "",
+    "animate": true,
+    "className": "",
+    "x": 590,
+    "y": 440,
+    "wires": [
+      [
+        "mqtt_out_mute"
+      ]
+    ]
+  },
+  {
+    "id": "ui_gain_status",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 1,
+    "width": 6,
+    "height": 1,
+    "name": "Gain Status",
+    "label": "Gain",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 750,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "ui_mode_status",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 2,
+    "width": 6,
+    "height": 1,
+    "name": "Mode Status",
+    "label": "Mode",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 670,
+    "y": 340,
+    "wires": []
+  },
+  {
+    "id": "ui_mute_status",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 3,
+    "width": 6,
+    "height": 1,
+    "name": "Mute Status",
+    "label": "Mute",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 670,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "ui_heartbeat_status",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 4,
+    "width": 6,
+    "height": 1,
+    "name": "Heartbeat",
+    "label": "Heartbeat",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 680,
+    "y": 560,
+    "wires": []
+  },
+  {
+    "id": "gain_state_to_ui",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Gain → UI",
+    "func": "msg.payload = Number(msg.payload);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 630,
+    "y": 180,
+    "wires": [
+      [
+        "ui_gain_status",
+        "ui_gain_slider"
+      ]
+    ]
+  },
+  {
+    "id": "mode_state_to_ui",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Mode → UI",
+    "func": "const map = {\n  0: 'white',\n  1: 'pink',\n  2: 'brown',\n  3: 'blue'\n};\nconst n = Number(msg.payload);\nmsg.payload = map[n] || msg.payload;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 370,
+    "y": 320,
+    "wires": [
+      [
+        "ui_mode_status",
+        "ui_mode_select"
+      ]
+    ]
+  },
+  {
+    "id": "mute_state_to_ui",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Mute → UI",
+    "func": "msg.payload = String(msg.payload);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 350,
+    "y": 480,
+    "wires": [
+      [
+        "ui_mute_status",
+        "ui_mute_switch"
+      ]
+    ]
+  },
+  {
+    "id": "heartbeat_to_ui",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Heartbeat → UI",
+    "func": "// msg.payload = `Last: ${new Date().toLocaleTimeString()})}`;\nvar now = new Date();\nvar date = now.toLocaleDateString('en-US', { timeZone: 'America/Denver' });\nvar time = now.toLocaleTimeString('en-US', { timeZone: 'America/Denver' });\n\nmsg.payload =\"Last: \" + date + \"   \" + time;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 340,
+    "y": 560,
+    "wires": [
+      [
+        "ui_heartbeat_status"
+      ]
+    ]
+  },
+  {
+    "id": "fac299c1596bc9d2",
+    "type": "debug",
+    "z": "tab_noise",
+    "name": "debug 9",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 480,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "f6f5c5a8c7bea7e7",
+    "type": "mqtt-broker",
+    "name": "10.0.31.54",
+    "broker": "10.0.31.54",
+    "port": 1883,
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "ui_group_main",
+    "type": "ui_group",
+    "name": "Controls",
+    "tab": "ui_tab_noise",
+    "order": 1,
+    "disp": true,
+    "width": "6"
+  },
+  {
+    "id": "ui_group_status",
+    "type": "ui_group",
+    "name": "Status",
+    "tab": "ui_tab_noise",
+    "order": 2,
+    "disp": true,
+    "width": "6"
+  },
+  {
+    "id": "ui_tab_noise",
+    "type": "ui_tab",
+    "name": "Bedroom Noise",
+    "icon": "volume_up",
+    "order": 1
+  },
+  {
+    "id": "af4d98c14b34501d",
+    "type": "global-config",
+    "env": [],
+    "modules": {
+      "node-red-dashboard": "3.6.6"
+    }
+  }
+]

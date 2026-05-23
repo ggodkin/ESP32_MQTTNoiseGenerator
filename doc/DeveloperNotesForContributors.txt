@@ -1,0 +1,73 @@
+Developer Notes
+===============
+
+This document provides internal notes for contributors working on the ESP32 Noise Generator firmware. It explains architectural decisions, module responsibilities, and integration points.
+
+Architecture Overview
+---------------------
+The system is divided into five major subsystems:
+1. Audio Engine (noise generation and I2S output)
+2. UI Engine (LEDs, encoder, button)
+3. WiFi and MQTT subsystem
+4. Configuration subsystem (NVS + WiFiManager)
+5. Main loop coordinator
+
+Audio Engine
+------------
+Generates white, pink, brown, and blue noise.
+Runs in the main loop, not in an ISR.
+Uses a 32-bit xorshift RNG.
+Pink noise uses a 3-pole filter.
+Brown noise uses a leaky integrator.
+Blue noise uses a differentiator with normalization.
+
+UI Engine
+---------
+Encoder updates gain and triggers LED updates.
+Button supports short, long, and extra-long presses.
+LEDs show volume bar, mode flash, and mute state.
+LED restore is performed at boot.
+
+WiFi + MQTT
+-----------
+WiFiManager is used only for configuration.
+All WiFi and MQTT credentials are stored in NVS.
+MQTT reconnect is non-blocking and periodic.
+MQTT publishes state only when needed.
+
+Configuration
+-------------
+Stored in NVS under app_cfg.
+Includes WiFi SSID, WiFi password, MQTT server, MQTT port, MQTT user, MQTT pass, MQTT base topic, MQTT client ID.
+All fields are trimmed to avoid whitespace issues.
+
+Main Loop
+---------
+Runs audio engine, WiFi reconnect, MQTT reconnect, LED updates, and UI handling.
+Never blocks.
+Never delays except for short mode flash.
+
+Design Principles
+-----------------
+- No blocking operations in audio path
+- No recursion in MQTT callbacks
+- No reliance on WiFiManager's internal NVS
+- Deterministic boot behavior
+- LED state always reflects actual audio state
+- MQTT state is authoritative but not required
+
+Testing Notes
+-------------
+- Test mode changes via MQTT and encoder
+- Test mute behavior
+- Test WiFi reconnect by cycling router
+- Test MQTT reconnect by restarting broker
+- Test LED restore after reboot
+- Test config portal after clearing NVS
+
+Future Improvements
+-------------------
+- Add optional high-pass filter for white noise
+- Add adjustable pink filter coefficients via MQTT
+- Add OTA update support
+- Add web UI for tuning parameters

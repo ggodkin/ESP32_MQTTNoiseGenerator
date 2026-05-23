@@ -1,0 +1,159 @@
+ESP32 Noise Generator – Installation, MQTT Topics, Home Assistant Integration, Node‑RED Integration, and Firmware Notes
+
+This section documents how the ESP32 Noise Generator integrates with Home Assistant, Node‑RED, and MQTT. It covers installation, MQTT topics, discovery behavior, friendly mode names, dashboard control, and firmware behavior. This block is designed for direct inclusion in a GitHub README file.
+
+1. Installation and Requirements
+
+The ESP32 firmware automatically handles WiFi configuration, MQTT connection, and Home Assistant discovery. No manual configuration is required on the Home Assistant side except enabling MQTT and placing the Home Assistant package file in the packages directory.
+
+Requirements:
+- ESP32 device running the provided firmware
+- MQTT broker (tested with Mosquitto)
+- Home Assistant with MQTT integration enabled
+- Node‑RED (optional)
+- WiFi network
+
+Once the ESP32 connects to WiFi and MQTT, it publishes Home Assistant discovery topics and becomes visible as a device named NoiseGen.
+
+2. MQTT Topics
+
+All MQTT topics use the base prefix:
+bedroom/noise/
+
+State topics published by the ESP32:
+bedroom/noise/mode
+bedroom/noise/gain
+bedroom/noise/mute
+bedroom/noise/heartbeat
+
+Command topics subscribed by the ESP32:
+bedroom/noise/mode/set
+bedroom/noise/gain/set
+bedroom/noise/mute/set
+
+Payloads:
+Mode: numeric values 0, 1, 2, 3
+Gain: numeric values 0 through 19
+Mute: ON or OFF
+Heartbeat: 1 when online
+
+3. Home Assistant MQTT Discovery
+
+The ESP32 publishes MQTT discovery messages under the homeassistant/ namespace. Home Assistant automatically creates the following entities:
+
+sensor.noisegen_mode_2
+number.gain_2
+switch.mute_2
+binary_sensor.online_2
+
+Descriptions:
+sensor.noisegen_mode_2 reports the current noise mode as a numeric value (0 to 3)
+number.gain_2 controls the gain level
+switch.mute_2 toggles mute on or off
+binary_sensor.online_2 indicates device heartbeat and online status
+
+These entities appear under the NoiseGen device in Home Assistant.
+
+4. Friendly Mode Names in Home Assistant
+
+Home Assistant receives the mode as a numeric value. To display human‑readable names (White, Pink, Brown, Blue), a template sensor is used:
+
+template:
+  - sensor:
+      - name: "NoiseGen Mode Friendly"
+        unique_id: noise_gen_mode_friendly
+        state: >
+          {% set m = states('sensor.noisegen_mode_2') %}
+          {% if m == '0' %} White
+          {% elif m == '1' %} Pink
+          {% elif m == '2' %} Brown
+          {% elif m == '3' %} Blue
+          {% else %} Unknown {% endif %}
+
+This template sensor must be placed inside a Home Assistant package file in the packages directory.
+
+5. Mode Control in Home Assistant
+
+Home Assistant uses an input_select helper to allow the user to choose a friendly mode name:
+
+input_select:
+  noise_gen_mode:
+    name: "Noise Mode"
+    options:
+      - White
+      - Pink
+      - Brown
+      - Blue
+
+A Home Assistant automation converts the friendly name into the numeric value required by the ESP32:
+
+automation:
+  - alias: "NoiseGen Mode Control"
+    id: noise_gen_mode_control
+    trigger:
+      - platform: state
+        entity_id: input_select.noise_gen_mode
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "bedroom/noise/mode/set"
+          payload: >
+            {% if trigger.to_state.state == 'White' %} 0
+            {% elif trigger.to_state.state == 'Pink' %} 1
+            {% elif trigger.to_state.state == 'Brown' %} 2
+            {% elif trigger.to_state.state == 'Blue' %} 3
+            {% endif %}
+
+This preserves numeric mode behavior for firmware and Node‑RED.
+
+6. Lovelace Dashboard Card
+
+A simple Lovelace card can be added to the dashboard using the Manual Card editor:
+
+type: vertical-stack
+cards:
+  - type: entities
+    title: Noise Generator
+    entities:
+      - entity: sensor.noisegen_mode_friendly
+        name: Current Mode
+      - entity: input_select.noise_gen_mode
+        name: Set Mode
+      - entity: number.gain_2
+        name: Gain
+      - entity: switch.mute_2
+        name: Mute
+      - entity: binary_sensor.online_2
+        name: Online
+
+This card provides full control and monitoring of the device.
+
+7. Node‑RED Integration
+
+Node‑RED communicates directly with the ESP32 using numeric MQTT payloads. No changes are required to existing flows. The firmware continues to publish and subscribe to numeric mode values, ensuring compatibility.
+
+Node‑RED can read:
+bedroom/noise/mode
+bedroom/noise/gain
+bedroom/noise/mute
+bedroom/noise/heartbeat
+
+Node‑RED can write:
+bedroom/noise/mode/set
+bedroom/noise/gain/set
+bedroom/noise/mute/set
+
+Home Assistant and Node‑RED operate independently and do not interfere with each other.
+
+8. Firmware Notes
+
+The firmware:
+- Publishes MQTT discovery messages on boot
+- Publishes retained state for mode, gain, and mute
+- Subscribes to command topics for mode, gain, and mute
+- Publishes a heartbeat every 30 seconds
+- Stores WiFi and MQTT credentials using WiFiManager
+- Stores gain, mode, and mute state in NVS for persistence
+- Uses numeric mode values for maximum compatibility with Node‑RED
+
+No firmware changes are required for Home Assistant integration.
