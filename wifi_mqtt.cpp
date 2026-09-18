@@ -133,6 +133,9 @@ void mqttPublishDiscovery() {
     "\"stat_t\":\"~/heartbeat\","
     "\"pl_on\":\"1\","
     "\"pl_off\":\"0\","
+    "\"avty_t\":\"~/online\","
+    "\"pl_avail\":\"1\","
+    "\"pl_not_avail\":\"0\","
     + dev +
     "}"
   );
