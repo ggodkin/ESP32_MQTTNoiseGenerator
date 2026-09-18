@@ -8,7 +8,7 @@
 // Shared globals from original code
 volatile NoiseMode g_noiseMode = MODE_PINK;
 bool g_muted = false;
-int32_t g_detentCount = 0;
+volatile int32_t g_detentCount = 0;
 
 // PRNG state
 static uint64_t xs_state[2] = {
