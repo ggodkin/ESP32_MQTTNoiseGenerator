@@ -14,6 +14,8 @@ Features
 - Automatic WiFi reconnect and MQTT reconnect
 - MQTT control and state reporting
 - Heartbeat topic for device monitoring
+- Home Assistant MQTT Discovery with per-device unique IDs
+- Optional DS18B20 temperature sensor with MQTT + Home Assistant + Node-RED support
 - Fully non-blocking audio, UI, WiFi, and MQTT loops
 
 Hardware Requirements
@@ -65,6 +67,10 @@ pink
 Mute:
 ON
 
+Node-RED Temperature
+-------------------
+Import `Node-Red/Noise-Generator-Temperature.json` into the existing Noise Generator flow/tab. It listens to `<mqttBase>/temperature` and displays °C and °F in the existing Dashboard status group. If your base topic differs from `bedroom/noise`, change the MQTT input topic.
+
 Node-RED Examples
 -----------------
 Set mode to pink:
@@ -106,6 +112,27 @@ Boot Behavior
 4. Begin MQTT connection
 5. Start audio engine
 6. Enter main loop
+
+Home Assistant
+---------------
+HA integration files are in the `HA/` directory:
+- `noise_generator_package.yaml`: mode helper and IKEA E1810 automation
+- `dashboard_noise_generator.yaml`: Lovelace dashboard card
+
+The firmware publishes MQTT Discovery automatically. The MQTT client ID (`mqttId`) is used as the Home Assistant device ID, so each generator should have a unique ID such as `noisegen-bedroom`, `noisegen-office`, or `noisegen-nursery`.
+
+For multiple generators, give each device its own MQTT base topic, for example:
+- `bedroom/noise`
+- `office/noise`
+- `nursery/noise`
+
+Also give each associated IKEA E1810 remote a unique Zigbee2MQTT friendly name and create one automation per generator. Do not use the same MQTT command topics for multiple generators unless you intentionally want them to operate together.
+
+Optional DS18B20
+----------------
+The optional sensor is disabled by default in `temperature.h`:
+`DS18B20_ENABLED = false`.
+Set it to `true`, connect the DS18B20 data line to `DS18B20_PIN` (default GPIO 4), and use a 4.7 kOhm pull-up from data to 3.3 V. Install the locked OneWire and DallasTemperature libraries. When enabled, the firmware publishes temperature in °C to `<mqttBase>/temperature` and advertises it through Home Assistant MQTT Discovery. Node-RED support is provided by `Node-Red/Noise-Generator-Temperature.json`.
 
 Heartbeat
 ---------
