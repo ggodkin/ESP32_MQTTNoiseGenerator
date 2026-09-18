@@ -24,3 +24,5 @@ void startConfigPortal();
 void mqttPublishState();
 void mqttPublishDiscovery();
 void restoreUiState();
+bool mqttIsConnected();
+bool mqttPublishRaw(const char* topic, const char* payload, bool retained);
