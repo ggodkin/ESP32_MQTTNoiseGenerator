@@ -52,6 +52,10 @@ void mqttPublishDiscovery() {
   // Compact device block
   String deviceId = gConfig.mqttId.length() ? gConfig.mqttId : "esp32-noise-1";
   String dev = "\"dev\":{\"ids\":[\"" + deviceId + "\"],\"name\":\"NoiseGen - " + deviceId + "\"}";
+  String gainId = deviceId + "_gain";
+  String modeId = deviceId + "_mode";
+  String muteId = deviceId + "_mute";
+  String onlineId = deviceId + "_online";
 
   auto dbgPub = [&](const char* topic, const String& payload) {
     bool ok = mqtt.publish(topic, payload.c_str(), true);
@@ -64,9 +68,9 @@ void mqttPublishDiscovery() {
 
   // Gain
   dbgPub(
-    "homeassistant/number/noise_gen_gain/config",
+    "homeassistant/number/" + gainId + "/config",
     "{\"name\":\"Gain\","
-    "\"uniq_id\":\"noise_gen_gain\","
+    "\"uniq_id\":\"" + gainId + "\","
     "\"~\":\"" + base + "\","
     "\"stat_t\":\"~/gain\","
     "\"cmd_t\":\"~/gain/set\","
@@ -79,9 +83,9 @@ void mqttPublishDiscovery() {
   // Mode
   // Mode (as sensor, not select)
   dbgPub(
-    "homeassistant/sensor/noise_gen_mode/config",
+    "homeassistant/sensor/" + modeId + "/config",
     "{\"name\":\"Mode\","
-    "\"uniq_id\":\"noise_gen_mode\","
+    "\"uniq_id\":\"" + modeId + "\","
     "\"~\":\"" + base + "\","
     "\"stat_t\":\"~/mode\","
     "\"dev_cla\":\"enum\","
@@ -92,9 +96,9 @@ void mqttPublishDiscovery() {
 
   // Mute
   dbgPub(
-    "homeassistant/switch/noise_gen_mute/config",
+    "homeassistant/switch/" + muteId + "/config",
     "{\"name\":\"Mute\","
-    "\"uniq_id\":\"noise_gen_mute\","
+    "\"uniq_id\":\"" + muteId + "\","
     "\"~\":\"" + base + "\","
     "\"stat_t\":\"~/mute\","
     "\"cmd_t\":\"~/mute/set\","
@@ -122,9 +126,9 @@ void mqttPublishDiscovery() {
 
   // Online
   dbgPub(
-    "homeassistant/binary_sensor/noise_gen_online/config",
+    "homeassistant/binary_sensor/" + onlineId + "/config",
     "{\"name\":\"Online\","
-    "\"uniq_id\":\"noise_gen_online\","
+    "\"uniq_id\":\"" + onlineId + "\","
     "\"~\":\"" + base + "\","
     "\"stat_t\":\"~/heartbeat\","
     "\"pl_on\":\"1\","
@@ -192,6 +196,15 @@ void mqttPublishState() {
   mqtt.publish((base + "gain").c_str(), String(g_detentCount).c_str(), true);
   mqtt.publish((base + "mode").c_str(), String((int)g_noiseMode).c_str(), true);
   mqtt.publish((base + "mute").c_str(), g_muted ? "ON" : "OFF", true);
+}
+
+bool mqttIsConnected() {
+  return mqtt.connected();
+}
+
+bool mqttPublishRaw(const char* topic, const char* payload, bool retained) {
+  if (!mqtt.connected()) return false;
+  return mqtt.publish(topic, payload, retained);
 }
 
 void mqttHeartbeat() {
@@ -305,7 +318,9 @@ bool mqttReconnect() {
                       gConfig.mqttUser.c_str(),
                       gConfig.mqttPass.c_str());
   else
-    ok = mqtt.connect(gConfig.mqttId.c_str());
+    ok = mqtt.connect(gConfig.mqttId.c_str(),
+                  nullptr, nullptr,
+                  (gConfig.mqttBase + "/online").c_str(), 1, true, "0");
 
   Serial.printf("[MQTT] Connect result: %s\n", ok ? "SUCCESS" : "FAIL");
 
@@ -318,6 +333,7 @@ bool mqttReconnect() {
     mqtt.subscribe((base + "mute/set").c_str());
 
     mqttPublishDiscovery();
+    mqtt.publish((gConfig.mqttBase + "/online").c_str(), "1", true);
     mqttPublishState();
 #if DS18B20_ENABLED
     temperaturePublish();
