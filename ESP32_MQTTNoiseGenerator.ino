@@ -7,38 +7,46 @@
 #include "temperature.h"
 
 // -----------------------------------------------------------------------------
-// Startup order is intentional:
+// LOCAL-FIRST STARTUP
 //
-//   1. Local controls and LEDs
-//   2. Audio engine
-//   3. Optional sensor
-//   4. Wi-Fi/MQTT services
-//
-// The noise generator must remain fully usable when Wi-Fi, MQTT, or NVS is
-// unavailable. Networking is a background service and is never required for
-// local operation.
+// Wi-Fi, MQTT, and NVS are background services. They must never be required
+// for the noise generator, LEDs, encoder, or button to operate.
 // -----------------------------------------------------------------------------
 
 void setup() {
   Serial.begin(115200);
   delay(300);
 
-  // Local hardware must be ready before any network work.
+  Serial.println("[BOOT] Initializing local controls");
   encoderSetup();
   buttonSetup();
   ledsSetup();
+
+  Serial.println("[BOOT] Initializing audio");
   audioSetup();
+
+  Serial.println("[BOOT] Initializing optional temperature sensor");
   temperatureSetup();
 
-  // Start with the default local UI immediately.
+  // Establish a visible local state before any network/NVS work.
   updateVolumeLEDs(0.0f);
 
-  // Start networking only after all local functionality is initialized.
-  wifiMqttSetup();
+  Serial.println("[BOOT] Local hardware initialization complete");
 }
 
 void loop() {
-  // Local operation always runs, regardless of Wi-Fi/MQTT/NVS state.
+  // The first loop performs network initialization only after all local
+  // hardware has already been initialized. It is intentionally deferred
+  // from setup() to preserve responsive local startup.
+  static bool networkInitDone = false;
+  if (!networkInitDone) {
+    Serial.println("[BOOT] Starting optional WiFi/MQTT services");
+    wifiMqttSetup();
+    networkInitDone = true;
+    Serial.println("[BOOT] Optional WiFi/MQTT initialization complete");
+  }
+
+  // LOCAL CONTROL PATH -- never conditional on Wi-Fi/MQTT/NVS.
   handleButton();
   handleGain();
   handleModeFlash();
@@ -46,7 +54,7 @@ void loop() {
   fillAudioBuffer();
   writeAudioBuffer();
 
-  // Network and optional telemetry are background services.
+  // BACKGROUND SERVICES.
   wifiMqttLoop();
   temperatureLoop();
 }
