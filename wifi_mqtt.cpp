@@ -11,10 +11,7 @@
 #include "leds.h"
 #include "temperature.h"
 
-// ---------- globals ----------
-
 AppConfig gConfig;
-
 Preferences cfgPrefs;
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -31,14 +28,9 @@ const unsigned long MQTT_HEARTBEAT_INTERVAL = 90000;
 
 bool mqttNeedsPublish = false;
 
-// external state from other modules
 extern int32_t g_detentCount;
 extern volatile NoiseMode g_noiseMode;
 extern bool g_muted;
-
-// ---------------------------------------------------------------------------
-// Home Assistant MQTT Discovery (compact dev + debug)
-// ---------------------------------------------------------------------------
 
 void mqttPublishDiscovery() {
   if (!mqtt.connected()) {
@@ -49,24 +41,23 @@ void mqttPublishDiscovery() {
   String base = gConfig.mqttBase;
   if (base.endsWith("/")) base.remove(base.length() - 1);
 
-  // Compact device block
   String deviceId = gConfig.mqttId.length() ? gConfig.mqttId : "esp32-noise-1";
-  String dev = "\"dev\":{\"ids\":[\"" + deviceId + "\"],\"name\":\"NoiseGen - " + deviceId + "\"}";
+  String dev = "\"dev\":{\"ids\":[\"" + deviceId +
+               "\"],\"name\":\"NoiseGen - " + deviceId + "\"}";
   String gainId = deviceId + "_gain";
   String modeId = deviceId + "_mode";
   String muteId = deviceId + "_mute";
   String onlineId = deviceId + "_online";
 
-  auto dbgPub = [&](const char* topic, const String& payload) {
-    bool ok = mqtt.publish(topic, payload.c_str(), true);
+  // Arduino String concatenation returns StringSumHelper for some expressions.
+  // Accept String here so discovery topics compile correctly.
+  auto dbgPub = [&](const String& topic, const String& payload) {
+    bool ok = mqtt.publish(topic.c_str(), payload.c_str(), true);
     Serial.println("--------------------------------------------------");
     Serial.printf("[DISCOVERY] PUBLISH\n  topic:   %s\n  result:  %s\n  payload:\n%s\n",
-                  topic,
-                  ok ? "OK" : "FAIL",
-                  payload.c_str());
+                  topic.c_str(), ok ? "OK" : "FAIL", payload.c_str());
   };
 
-  // Gain
   dbgPub(
     "homeassistant/number/" + gainId + "/config",
     "{\"name\":\"Gain\","
@@ -75,13 +66,10 @@ void mqttPublishDiscovery() {
     "\"stat_t\":\"~/gain\","
     "\"cmd_t\":\"~/gain/set\","
     "\"min\":0,"
-    "\"max\":19,"
-     + dev +
-    "}"
+    "\"max\":20,"
+    + dev + "}"
   );
 
-  // Mode
-  // Mode (as sensor, not select)
   dbgPub(
     "homeassistant/sensor/" + modeId + "/config",
     "{\"name\":\"Mode\","
@@ -90,11 +78,9 @@ void mqttPublishDiscovery() {
     "\"stat_t\":\"~/mode\","
     "\"dev_cla\":\"enum\","
     "\"options\":[\"0\",\"1\",\"2\",\"3\"],"
-    + dev +
-    "}"
+    + dev + "}"
   );
 
-  // Mute
   dbgPub(
     "homeassistant/switch/" + muteId + "/config",
     "{\"name\":\"Mute\","
@@ -104,11 +90,9 @@ void mqttPublishDiscovery() {
     "\"cmd_t\":\"~/mute/set\","
     "\"pl_on\":\"ON\","
     "\"pl_off\":\"OFF\","
-    + dev +
-    "}"
+    + dev + "}"
   );
 
-  // Optional DS18B20 temperature
 #if DS18B20_ENABLED
   dbgPub(
     "homeassistant/sensor/" + deviceId + "_temperature/config",
@@ -119,33 +103,26 @@ void mqttPublishDiscovery() {
     "\"unit_of_meas\":\"°C\","
     "\"dev_cla\":\"temperature\","
     "\"state_class\":\"measurement\","
-    + dev +
-    "}"
+    + dev + "}"
   );
 #endif
 
-  // Online
   dbgPub(
     "homeassistant/binary_sensor/" + onlineId + "/config",
     "{\"name\":\"Online\","
     "\"uniq_id\":\"" + onlineId + "\","
     "\"~\":\"" + base + "\","
-    "\"stat_t\":\"~/heartbeat\","
+    "\"stat_t\":\"~/online\","
     "\"pl_on\":\"1\","
     "\"pl_off\":\"0\","
     "\"avty_t\":\"~/online\","
     "\"pl_avail\":\"1\","
     "\"pl_not_avail\":\"0\","
-    + dev +
-    "}"
+    + dev + "}"
   );
 
   Serial.println("[DISCOVERY] All discovery messages attempted");
 }
-
-// ---------------------------------------------------------------------------
-// Config NVS helpers
-// ---------------------------------------------------------------------------
 
 void loadConfigFromNvs() {
   cfgPrefs.begin("app_cfg", true);
@@ -158,13 +135,11 @@ void loadConfigFromNvs() {
   gConfig.mqttBase   = cfgPrefs.getString("mqttBase", "bedroom/noise");
   gConfig.mqttId     = cfgPrefs.getString("mqttId", "esp32-noise-1");
   cfgPrefs.end();
-
   Serial.println("[CFG] Loaded from NVS");
 }
 
 void saveConfigToNvs() {
   cfgPrefs.begin("app_cfg", false);
-
   cfgPrefs.putString("wifiSsid",   gConfig.wifiSsid.substring(0, 31));
   cfgPrefs.putString("wifiPass",   gConfig.wifiPass.substring(0, 63));
   cfgPrefs.putString("mqttServer", gConfig.mqttServer.substring(0, 31));
@@ -173,16 +148,10 @@ void saveConfigToNvs() {
   cfgPrefs.putString("mqttPass",   gConfig.mqttPass.substring(0, 63));
   cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 31));
   cfgPrefs.putString("mqttId",     gConfig.mqttId.substring(0, 31));
-
   cfgPrefs.end();
   delay(200);
-
   Serial.println("[CFG] Saved to NVS");
 }
-
-// ---------------------------------------------------------------------------
-// MQTT helpers
-// ---------------------------------------------------------------------------
 
 void mqttPublishState() {
   if (!mqtt.connected()) {
@@ -201,9 +170,7 @@ void mqttPublishState() {
   mqtt.publish((base + "mute").c_str(), g_muted ? "ON" : "OFF", true);
 }
 
-bool mqttIsConnected() {
-  return mqtt.connected();
-}
+bool mqttIsConnected() { return mqtt.connected(); }
 
 bool mqttPublishRaw(const char* topic, const char* payload, bool retained) {
   if (!mqtt.connected()) return false;
@@ -216,18 +183,12 @@ void mqttHeartbeat() {
   unsigned long now = millis();
   if (now - lastMqttHeartbeat >= MQTT_HEARTBEAT_INTERVAL) {
     lastMqttHeartbeat = now;
-
     String base = gConfig.mqttBase;
     if (!base.endsWith("/")) base += "/";
-
     mqtt.publish((base + "heartbeat").c_str(), "1", false);
     Serial.println("[MQTT] Heartbeat sent");
   }
 }
-
-// ---------------------------------------------------------------------------
-// MQTT callback (LED behavior restored)
-// ---------------------------------------------------------------------------
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
   String t = String(topic);
@@ -241,22 +202,17 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
   bool changed = false;
 
-  // ---- GAIN ----
   if (t == base + "gain/set") {
     g_detentCount = constrain(msg.toInt(), ENC_MIN, ENC_MAX);
     changed = true;
-
     float ui = (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN);
     updateVolumeLEDs(ui);
     if (!g_muted) showModeColor(g_noiseMode);
   }
-
-  // ---- MODE ----
   else if (t == base + "mode/set") {
     int m = -1;
-    if (msg == "0" || msg == "1" || msg == "2" || msg == "3") {
-      m = msg.toInt();
-    } else if (msg.equalsIgnoreCase("white")) m = 0;
+    if (msg == "0" || msg == "1" || msg == "2" || msg == "3") m = msg.toInt();
+    else if (msg.equalsIgnoreCase("white")) m = 0;
     else if (msg.equalsIgnoreCase("pink"))  m = 1;
     else if (msg.equalsIgnoreCase("brown")) m = 2;
     else if (msg.equalsIgnoreCase("blue"))  m = 3;
@@ -264,7 +220,6 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     if (m >= 0 && m < MODE_COUNT) {
       g_noiseMode = (NoiseMode)m;
       changed = true;
-
       if (!g_muted) {
         float ui = (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN);
         showModeColor(g_noiseMode);
@@ -272,18 +227,15 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
       }
     }
   }
-
-  // ---- MUTE ----
   else if (t == base + "mute/set") {
     bool newMute =
       msg.equalsIgnoreCase("ON") ||
-      msg.equalsIgnoreCase("1")  ||
+      msg.equalsIgnoreCase("1") ||
       msg.equalsIgnoreCase("true");
 
     if (newMute != g_muted) {
       g_muted = newMute;
       changed = true;
-
       if (g_muted) {
         showMute();
       } else {
@@ -295,14 +247,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (changed) {
-    Serial.println("[MQTT] State changed → scheduling publish");
+    Serial.println("[MQTT] State changed -> scheduling publish");
     mqttNeedsPublish = true;
   }
 }
-
-// ---------------------------------------------------------------------------
-// MQTT reconnect
-// ---------------------------------------------------------------------------
 
 bool mqttReconnect() {
   if (!gConfig.mqttServer.length()) {
@@ -315,15 +263,24 @@ bool mqttReconnect() {
                 gConfig.mqttPort.toInt(),
                 gConfig.mqttId.c_str());
 
+  String onlineTopic = gConfig.mqttBase;
+  if (!onlineTopic.endsWith("/")) onlineTopic += "/";
+  onlineTopic += "online";
+
   bool ok;
-  if (gConfig.mqttUser.length() > 0)
-    ok = mqtt.connect(gConfig.mqttId.c_str(),
-                      gConfig.mqttUser.c_str(),
-                      gConfig.mqttPass.c_str());
-  else
-    ok = mqtt.connect(gConfig.mqttId.c_str(),
-                  nullptr, nullptr,
-                  (gConfig.mqttBase + "/online").c_str(), 1, true, "0");
+  if (gConfig.mqttUser.length() > 0) {
+    ok = mqtt.connect(
+      gConfig.mqttId.c_str(),
+      gConfig.mqttUser.c_str(),
+      gConfig.mqttPass.c_str(),
+      onlineTopic.c_str(), 1, true, "0"
+    );
+  } else {
+    ok = mqtt.connect(
+      gConfig.mqttId.c_str(),
+      onlineTopic.c_str(), 1, true, "0"
+    );
+  }
 
   Serial.printf("[MQTT] Connect result: %s\n", ok ? "SUCCESS" : "FAIL");
 
@@ -336,7 +293,7 @@ bool mqttReconnect() {
     mqtt.subscribe((base + "mute/set").c_str());
 
     mqttPublishDiscovery();
-    mqtt.publish((gConfig.mqttBase + "/online").c_str(), "1", true);
+    mqtt.publish(onlineTopic.c_str(), "1", true);
     mqttPublishState();
 #if DS18B20_ENABLED
     temperaturePublish();
@@ -345,10 +302,6 @@ bool mqttReconnect() {
 
   return ok;
 }
-
-// ---------------------------------------------------------------------------
-// WiFiManager config portal
-// ---------------------------------------------------------------------------
 
 void startConfigPortal() {
   Serial.println("[WIFI] Starting config portal...");
@@ -409,10 +362,6 @@ void startConfigPortal() {
   wm.setDebugOutput(false);
 }
 
-// ---------------------------------------------------------------------------
-// Restore LED state
-// ---------------------------------------------------------------------------
-
 void restoreUiState() {
   if (g_muted) {
     showMute();
@@ -422,10 +371,6 @@ void restoreUiState() {
     showModeColor(g_noiseMode);
   }
 }
-
-// ---------------------------------------------------------------------------
-// Boot-time init
-// ---------------------------------------------------------------------------
 
 void wifiMqttSetup() {
   loadConfigFromNvs();
@@ -447,10 +392,6 @@ void wifiMqttSetup() {
   restoreUiState();
 }
 
-// ---------------------------------------------------------------------------
-// Loop-time WiFi + MQTT
-// ---------------------------------------------------------------------------
-
 void wifiMqttLoop() {
   wl_status_t st = WiFi.status();
 
@@ -470,7 +411,7 @@ void wifiMqttLoop() {
       unsigned long now = millis();
       if (now - lastMqttReconnectAttempt > 5000) {
         lastMqttReconnectAttempt = now;
-        Serial.println("[MQTT] Not connected → reconnecting...");
+        Serial.println("[MQTT] Not connected -> reconnecting...");
         mqttReconnect();
       }
     } else {
