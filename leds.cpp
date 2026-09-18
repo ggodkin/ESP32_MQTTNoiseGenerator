@@ -21,7 +21,9 @@ uint32_t modeColor(NoiseMode mode) {
 
 void ledsSetup() {
   led.begin();
-  led.setBrightness(40);
+  // Limit the global LED brightness to 50%. All volume levels are
+  // automatically scaled proportionally below this maximum.
+  led.setBrightness(128);
   led.clear();
   led.show();
 }
