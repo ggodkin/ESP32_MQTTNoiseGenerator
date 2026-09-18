@@ -46,11 +46,11 @@ void updateVolumeLEDs(float ui) {
   uint8_t baseG = (c >>  8) & 0xFF;
   uint8_t baseB =  c        & 0xFF;
 
-  float level = ui * 4.0f;
+  float level = ui * LED_COUNT;
   int full = (int)level;
   float frac = level - full;
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < LED_COUNT; i++) {
     float scale = 0.0f;
 
     if (ui == 0.0f) {
