@@ -1,10 +1,9 @@
 #include "encoder.h"
-#include "soc/gpio_reg.h"
 #include "audio_engine.h"
 #include "leds.h"
 #include "wifi_mqtt.h"   // ⭐ Needed for mqttPublishState()
 
-extern int32_t g_detentCount;
+extern volatile int32_t g_detentCount;
 extern bool g_muted;
 extern bool modeFlashActive;
 
@@ -18,30 +17,32 @@ inline float clamp(float x, float lo, float hi) { return fminf(fmaxf(x, lo), hi)
 // -----------------------------------------------------------------------------
 void IRAM_ATTR readEncoder() {
   static uint8_t lastState = 0;
-  static int8_t direction = 0;
 
-  uint32_t inHigh = REG_READ(GPIO_IN1_REG);
+  const uint8_t a = static_cast<uint8_t>(digitalRead(ENC_A_PIN));
+  const uint8_t b = static_cast<uint8_t>(digitalRead(ENC_B_PIN));
+  const uint8_t state = static_cast<uint8_t>((a << 1) | b);
 
-  uint8_t a = (inHigh >> (ENC_A_PIN - 32)) & 1;
-  uint8_t b = (inHigh >> (ENC_B_PIN - 32)) & 1;
+  // Standard 2-bit quadrature transition table. Only count a full
+  // 00 -> ... -> 00 cycle, which gives one count per detent for the
+  // encoder used by this project.
+  static const int8_t transition[4][4] = {
+    { 0, -1, +1,  0},
+    {+1,  0,  0, -1},
+    {-1,  0,  0, +1},
+    { 0, +1, -1,  0}
+  };
 
-  uint8_t state = (a << 1) | b;
+  const int8_t delta = transition[lastState][state];
+  static int8_t accumulator = 0;
+  accumulator += delta;
 
-  if ((lastState == 0b00 && state == 0b01) ||
-      (lastState == 0b01 && state == 0b11) ||
-      (lastState == 0b11 && state == 0b10) ||
-      (lastState == 0b10 && state == 0b00)) {
-    direction = +1;
-  }
-  else if ((lastState == 0b00 && state == 0b10) ||
-           (lastState == 0b10 && state == 0b11) ||
-           (lastState == 0b11 && state == 0b01) ||
-           (lastState == 0b01 && state == 0b00)) {
-    direction = -1;
-  }
-
-  if (state == 0b00 && lastState != 0b00) {
-    g_detentCount += direction;
+  if (state == 0 && lastState != 0) {
+    if (accumulator >= 3) {
+      g_detentCount++;
+    } else if (accumulator <= -3) {
+      g_detentCount--;
+    }
+    accumulator = 0;
   }
 
   lastState = state;
