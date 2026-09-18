@@ -1,0 +1,49 @@
+[
+  {
+    "id": "ng_temp_in",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "Temperature State",
+    "topic": "bedroom/noise/temperature",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "x": 180,
+    "y": 680,
+    "wires": [["ng_temp_to_ui"]]
+  },
+  {
+    "id": "ng_temp_to_ui",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Temperature → UI",
+    "func": "const c = Number(msg.payload);\nif (!Number.isFinite(c)) return null;\nmsg.payload = c.toFixed(2) + ' °C / ' + (c * 9 / 5 + 32).toFixed(2) + ' °F';\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 680,
+    "wires": [["ng_temp_ui"]]
+  },
+  {
+    "id": "ng_temp_ui",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 5,
+    "width": 6,
+    "height": 1,
+    "name": "Temperature",
+    "label": "Temperature",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 700,
+    "y": 680,
+    "wires": []
+  }
+]
