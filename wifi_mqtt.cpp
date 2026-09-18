@@ -28,6 +28,19 @@ const unsigned long MQTT_HEARTBEAT_INTERVAL = 90000;
 
 bool mqttNeedsPublish = false;
 
+namespace {
+void setDefaultConfig() {
+  gConfig.wifiSsid   = "";
+  gConfig.wifiPass   = "";
+  gConfig.mqttServer = "";
+  gConfig.mqttPort   = "1883";
+  gConfig.mqttUser   = "";
+  gConfig.mqttPass   = "";
+  gConfig.mqttBase   = "bedroom/noise";
+  gConfig.mqttId     = "esp32-noise-1";
+}
+}
+
 extern int32_t g_detentCount;
 extern volatile NoiseMode g_noiseMode;
 extern bool g_muted;
@@ -125,21 +138,32 @@ void mqttPublishDiscovery() {
 }
 
 void loadConfigFromNvs() {
-  cfgPrefs.begin("app_cfg", true);
-  gConfig.wifiSsid   = cfgPrefs.getString("wifiSsid", "");
-  gConfig.wifiPass   = cfgPrefs.getString("wifiPass", "");
-  gConfig.mqttServer = cfgPrefs.getString("mqttServer", "");
-  gConfig.mqttPort   = cfgPrefs.getString("mqttPort", "1883");
-  gConfig.mqttUser   = cfgPrefs.getString("mqttUser", "");
-  gConfig.mqttPass   = cfgPrefs.getString("mqttPass", "");
-  gConfig.mqttBase   = cfgPrefs.getString("mqttBase", "bedroom/noise");
-  gConfig.mqttId     = cfgPrefs.getString("mqttId", "esp32-noise-1");
+  setDefaultConfig();
+
+  if (!cfgPrefs.begin("app_cfg", true)) {
+    Serial.println("[CFG] NVS unavailable; using built-in defaults");
+    return;
+  }
+
+  gConfig.wifiSsid   = cfgPrefs.getString("wifiSsid", gConfig.wifiSsid);
+  gConfig.wifiPass   = cfgPrefs.getString("wifiPass", gConfig.wifiPass);
+  gConfig.mqttServer = cfgPrefs.getString("mqttServer", gConfig.mqttServer);
+  gConfig.mqttPort   = cfgPrefs.getString("mqttPort", gConfig.mqttPort);
+  gConfig.mqttUser   = cfgPrefs.getString("mqttUser", gConfig.mqttUser);
+  gConfig.mqttPass   = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
+  gConfig.mqttBase   = cfgPrefs.getString("mqttBase", gConfig.mqttBase);
+  gConfig.mqttId     = cfgPrefs.getString("mqttId", gConfig.mqttId);
   cfgPrefs.end();
-  Serial.println("[CFG] Loaded from NVS");
+
+  Serial.println("[CFG] Configuration loaded from NVS");
 }
 
 void saveConfigToNvs() {
-  cfgPrefs.begin("app_cfg", false);
+  if (!cfgPrefs.begin("app_cfg", false)) {
+    Serial.println("[CFG] NVS unavailable; configuration not saved");
+    return;
+  }
+
   cfgPrefs.putString("wifiSsid",   gConfig.wifiSsid.substring(0, 31));
   cfgPrefs.putString("wifiPass",   gConfig.wifiPass.substring(0, 63));
   cfgPrefs.putString("mqttServer", gConfig.mqttServer.substring(0, 31));
@@ -149,8 +173,8 @@ void saveConfigToNvs() {
   cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 31));
   cfgPrefs.putString("mqttId",     gConfig.mqttId.substring(0, 31));
   cfgPrefs.end();
-  delay(200);
-  Serial.println("[CFG] Saved to NVS");
+
+  Serial.println("[CFG] Configuration saved to NVS");
 }
 
 void mqttPublishState() {
@@ -350,8 +374,6 @@ void startConfigPortal() {
     gConfig.mqttBase.trim();
 
     saveConfigToNvs();
-    cfgPrefs.end();
-    delay(200);
 
     Serial.println("[WIFI] Config saved");
     mqtt.setServer(gConfig.mqttServer.c_str(), gConfig.mqttPort.toInt());
@@ -393,6 +415,12 @@ void wifiMqttSetup() {
 }
 
 void wifiMqttLoop() {
+  // No configured SSID is a valid offline-only configuration. Do not start
+  // or repeatedly restart the Wi-Fi station in that case.
+  if (gConfig.wifiSsid.length() == 0) {
+    return;
+  }
+
   wl_status_t st = WiFi.status();
 
   if (st != WL_CONNECTED) {
