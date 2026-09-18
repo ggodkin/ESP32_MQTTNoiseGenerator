@@ -6,7 +6,7 @@
 
 extern volatile NoiseMode g_noiseMode;
 extern bool g_muted;
-extern int32_t g_detentCount;
+// g_detentCount is declared in audio_engine.h
 
 void buttonSetup() {
     pinMode(ENC_SW_PIN, INPUT_PULLUP);
