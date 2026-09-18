@@ -1,0 +1,19 @@
+type: grid
+cards:
+  - type: vertical-stack
+    cards:
+      - type: entities
+        title: Noise Generator
+        entities:
+          - entity: sensor.noisegen_mode_2
+            name: Current Mode
+          - entity: input_select.noise_gen_mode
+            name: Set Mode
+          - entity: number.gain_2
+            name: Gain
+          - entity: switch.mute_2
+            name: Mute
+          - entity: binary_sensor.online_2
+            name: Online
+          - entity: sensor.noisegen_temperature
+            name: Temperature
