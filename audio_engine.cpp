@@ -159,5 +159,8 @@ void fillAudioBuffer() {
 
 void writeAudioBuffer() {
   size_t written;
-  i2s_write(I2S_NUM_0, i2sBuffer, sizeof(i2sBuffer), &written, portMAX_DELAY);
+  // Never allow the audio driver to block the local-control loop indefinitely.
+  // A short timeout keeps the encoder, button, and LEDs responsive even if the
+  // I2S peripheral/amplifier is absent or not ready.
+  i2s_write(I2S_NUM_0, i2sBuffer, sizeof(i2sBuffer), &written, pdMS_TO_TICKS(5));
 }
