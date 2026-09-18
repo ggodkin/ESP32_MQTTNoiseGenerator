@@ -76,6 +76,7 @@ void handleGain() {
   interrupts();
 
   if (step != lastStep) {
+    Serial.printf("[ENC] Gain detent = %ld\n", (long)step);
     float ui = clamp01((float)(step - ENC_MIN) / (float)(ENC_MAX - ENC_MIN));
 
     float shaped = powf(ui, GAIN_SHAPE_EXP);
