@@ -15,7 +15,7 @@ constexpr int ENC_SW_PIN          = 27;
 
 // LEDs
 constexpr int LED_PIN             = 16;
-constexpr int LED_COUNT           = 4;
+constexpr int LED_COUNT           = 8;
 
 // Encoder range
 constexpr int32_t ENC_MIN         = 0;
