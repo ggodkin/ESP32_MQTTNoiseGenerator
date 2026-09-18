@@ -4,7 +4,7 @@ This section documents how the ESP32 Noise Generator integrates with Home Assist
 
 1. Installation and Requirements
 
-The ESP32 firmware automatically handles WiFi configuration, MQTT connection, and Home Assistant discovery. No manual configuration is required on the Home Assistant side except enabling MQTT and placing the Home Assistant package file in the packages directory.
+The ESP32 firmware automatically handles WiFi configuration, MQTT connection, and Home Assistant discovery. Enable the Home Assistant MQTT integration. The optional package file provides the friendly mode helper and IKEA E1810 automation.
 
 Requirements:
 - ESP32 device running the provided firmware
@@ -130,7 +130,7 @@ This card provides full control and monitoring of the device.
 
 7. Node‑RED Integration
 
-Node‑RED communicates directly with the ESP32 using numeric MQTT payloads. No changes are required to existing flows. The firmware continues to publish and subscribe to numeric mode values, ensuring compatibility.
+Node‑RED communicates directly with the ESP32 using numeric MQTT payloads. No changes are required to existing flows. The firmware continues to publish and subscribe to numeric mode values, ensuring compatibility. The temperature flow listens to `<mqttBase>/temperature`.
 
 Node‑RED can read:
 bedroom/noise/mode
@@ -145,13 +145,13 @@ bedroom/noise/mute/set
 
 Home Assistant and Node‑RED operate independently and do not interfere with each other.
 
-8. Firmware Notes
+8. Optional DS18B20 Temperature\n\nSet `DS18B20_ENABLED` to `true` in `temperature.h`, connect the DS18B20 data line to the configured GPIO (default GPIO 4), and add a 4.7 kOhm pull-up from data to 3.3 V. The firmware publishes `<mqttBase>/temperature` in degrees Celsius and Home Assistant discovers it automatically. Node-RED support is in `Node-Red/Noise-Generator-Temperature.json`.\n\n9. Multiple Noise Generators and E1810 Remotes\n\nEach generator should have a unique MQTT client ID and base topic. Example:\n- Bedroom: `mqttId=noisegen-bedroom`, base `bedroom/noise`\n- Office: `mqttId=noisegen-office`, base `office/noise`\n\nGive each E1810 a unique Zigbee2MQTT name, such as `NoiseGen_Bedroom` and `NoiseGen_Office`, and use a separate HA automation for each remote. This keeps commands isolated while allowing one Mosquitto broker and one Node-RED instance to manage all devices.\n\n10. Firmware Notes
 
 The firmware:
 - Publishes MQTT discovery messages on boot
 - Publishes retained state for mode, gain, and mute
 - Subscribes to command topics for mode, gain, and mute
-- Publishes a heartbeat every 30 seconds
+- Publishes a heartbeat every 90 seconds
 - Stores WiFi and MQTT credentials using WiFiManager
 - Stores gain, mode, and mute state in NVS for persistence
 - Uses numeric mode values for maximum compatibility with Node‑RED
