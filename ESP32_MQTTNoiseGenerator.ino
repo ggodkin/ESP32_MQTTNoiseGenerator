@@ -4,6 +4,7 @@
 #include "button.h"
 #include "leds.h"
 #include "audio_engine.h"
+#include "temperature.h"
 
 void setup() {
   Serial.begin(115200);
@@ -13,6 +14,7 @@ void setup() {
   buttonSetup();
   ledsSetup();
   audioSetup();
+  temperatureSetup();
 
   updateVolumeLEDs(0.0f);
 }
@@ -32,4 +34,5 @@ void loop() {
   writeAudioBuffer();
 
   wifiMqttLoop();
+  temperatureLoop();
 }
