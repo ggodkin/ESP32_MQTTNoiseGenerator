@@ -106,12 +106,20 @@ Device saves configuration and reboots
 
 Boot Behavior
 -------------
-1. Load configuration from NVS
-2. Restore LED/UI state
-3. Begin WiFi connection
-4. Begin MQTT connection
-5. Start audio engine
-6. Enter main loop
+1. Initialize encoder, button, LEDs, and audio engine
+2. Initialize the optional DS18B20 sensor
+3. Restore configuration from NVS when available; otherwise use built-in defaults
+4. Restore the local LED/UI state
+5. Start WiFi/MQTT as an optional background service when credentials are configured
+6. Enter the main loop
+
+Offline / Local Operation
+-------------------------
+The noise generator does not require WiFi, MQTT, or NVS to operate locally. Audio generation, the rotary encoder, the push button, mute, mode selection, and LEDs are initialized before any network service is started.
+
+If NVS is missing or unavailable, the firmware uses built-in defaults and continues running. If no WiFi SSID is configured, the firmware does not start WiFi or repeatedly attempt reconnects. If WiFi or MQTT becomes unavailable after startup, the device continues operating locally while the network services retry in the background.
+
+GPIO23 / D23 is intentionally unused and reserved for the PCB layout. Do not assign GPIO23 to any firmware feature.
 
 Home Assistant
 ---------------
