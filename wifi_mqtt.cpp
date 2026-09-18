@@ -9,6 +9,7 @@
 #include "config.h"
 #include "audio_engine.h"
 #include "leds.h"
+#include "temperature.h"
 
 // ---------- globals ----------
 
@@ -49,7 +50,8 @@ void mqttPublishDiscovery() {
   if (base.endsWith("/")) base.remove(base.length() - 1);
 
   // Compact device block
-  String dev = "\"dev\":{\"ids\":[\"noise_gen\"],\"name\":\"NoiseGen\"}";
+  String deviceId = gConfig.mqttId.length() ? gConfig.mqttId : "esp32-noise-1";
+  String dev = "\"dev\":{\"ids\":[\"" + deviceId + "\"],\"name\":\"NoiseGen - " + deviceId + "\"}";
 
   auto dbgPub = [&](const char* topic, const String& payload) {
     bool ok = mqtt.publish(topic, payload.c_str(), true);
@@ -101,6 +103,22 @@ void mqttPublishDiscovery() {
     + dev +
     "}"
   );
+
+  // Optional DS18B20 temperature
+#if DS18B20_ENABLED
+  dbgPub(
+    "homeassistant/sensor/" + deviceId + "_temperature/config",
+    "{\"name\":\"Temperature\","
+    "\"uniq_id\":\"" + deviceId + "_temperature\","
+    "\"~\":\"" + base + "\","
+    "\"stat_t\":\"~/temperature\","
+    "\"unit_of_meas\":\"°C\","
+    "\"dev_cla\":\"temperature\","
+    "\"state_class\":\"measurement\","
+    + dev +
+    "}"
+  );
+#endif
 
   // Online
   dbgPub(
@@ -212,7 +230,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     g_detentCount = constrain(msg.toInt(), ENC_MIN, ENC_MAX);
     changed = true;
 
-    float ui = (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MAX);
+    float ui = (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN);
     updateVolumeLEDs(ui);
     if (!g_muted) showModeColor(g_noiseMode);
   }
@@ -301,6 +319,9 @@ bool mqttReconnect() {
 
     mqttPublishDiscovery();
     mqttPublishState();
+#if DS18B20_ENABLED
+    temperaturePublish();
+#endif
   }
 
   return ok;
