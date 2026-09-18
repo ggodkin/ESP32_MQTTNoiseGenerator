@@ -23,7 +23,7 @@ Hardware Requirements
 - ESP32 DevKitC or equivalent module
 - MAX98357A I2S amplifier
 - Rotary encoder with push button
-- WS2812B LED bar (4 LEDs)
+- WS2812B LED bar (8 LEDs)
 - Momentary push button for configuration mode
 - 5V power supply
 
