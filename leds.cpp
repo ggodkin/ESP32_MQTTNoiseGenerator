@@ -54,7 +54,7 @@ void updateVolumeLEDs(float ui) {
     float scale = 0.0f;
 
     if (ui == 0.0f) {
-      scale = (i == 0) ? 0.15f : 0.0f;
+      scale = (i == 0) ? 0.50f : 0.0f;
     }
     else {
       if (i < full) scale = 1.0f;
