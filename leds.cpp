@@ -9,7 +9,7 @@ uint32_t modeFlashUntil = 0;
 
 extern volatile NoiseMode g_noiseMode;
 extern bool g_muted;
-extern int32_t g_detentCount;
+// g_detentCount is declared in audio_engine.h
 
 uint32_t modeColor(NoiseMode mode) {
   return
