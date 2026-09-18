@@ -3,7 +3,7 @@
 #include "leds.h"
 #include "wifi_mqtt.h"   // ⭐ Needed for mqttPublishState()
 
-extern volatile int32_t g_detentCount;
+// g_detentCount is declared in audio_engine.h
 extern bool g_muted;
 extern bool modeFlashActive;
 
