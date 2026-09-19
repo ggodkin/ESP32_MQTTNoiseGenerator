@@ -17,3 +17,5 @@ cards:
             name: Online
           - entity: sensor.noisegen_temperature
             name: Temperature
+          - entity: sensor.noisegen_temperature_last_update
+            name: Last Temperature Update
