@@ -25,8 +25,7 @@ void setup() {
   Serial.println("[BOOT] Initializing audio");
   audioSetup();
 
-  Serial.println("[BOOT] Initializing optional temperature sensor");
-  temperatureSetup();
+  Serial.println("[BOOT] Temperature sensor configuration will be loaded from NVS");
 
   // Establish a visible local state before any network/NVS work.
   updateVolumeLEDs(0.0f);
@@ -42,6 +41,7 @@ void loop() {
   if (!networkInitDone) {
     Serial.println("[BOOT] Starting optional WiFi/MQTT services");
     wifiMqttSetup();
+    temperatureSetup();
     networkInitDone = true;
     Serial.println("[BOOT] Optional WiFi/MQTT initialization complete");
   }
