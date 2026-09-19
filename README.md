@@ -15,7 +15,7 @@ Features
 - MQTT control and state reporting
 - Heartbeat topic for device monitoring
 - Home Assistant MQTT Discovery with per-device unique IDs
-- Optional DS18B20 temperature sensor with MQTT + Home Assistant + Node-RED support
+- Optional DS18B20 temperature sensor with NVS-configurable enable/disable state and MQTT + Home Assistant + Node-RED support
 - Fully non-blocking audio, UI, WiFi, and MQTT loops
 
 Hardware Requirements
@@ -138,9 +138,7 @@ Also give each associated IKEA E1810 remote a unique Zigbee2MQTT friendly name a
 
 Optional DS18B20
 ----------------
-The optional sensor is disabled by default in `temperature.h`:
-`DS18B20_ENABLED = false`.
-Set it to `true`, connect the DS18B20 data line to `DS18B20_PIN` (default GPIO 4), and use a 4.7 kOhm pull-up from data to 3.3 V. Install the locked OneWire and DallasTemperature libraries. When enabled, the firmware publishes temperature in °C to `<mqttBase>/temperature` and advertises it through Home Assistant MQTT Discovery. Node-RED support is provided by `Node-Red/Noise-Generator-Temperature.json`.
+The DS18B20 driver is compiled in, but the sensor is disabled by default. Its enable/disable state is stored in NVS and can be changed from the WiFiManager configuration portal using **Enable DS18B20 temperature (T/F)**. The data line remains on `DS18B20_PIN` (default GPIO 4), with a 4.7 kOhm pull-up from data to 3.3 V. Install the locked OneWire and DallasTemperature libraries. When enabled, the firmware publishes temperature in °C to `<mqttBase>/temperature` and advertises it through Home Assistant MQTT Discovery. Node-RED support is provided by `Node-Red/Noise-Generator-Temperature.json`.
 
 Heartbeat
 ---------
