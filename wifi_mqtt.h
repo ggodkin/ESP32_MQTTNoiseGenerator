@@ -14,6 +14,7 @@ struct AppConfig {
   String mqttPass;
   String mqttBase;
   String mqttId;
+  bool tempEnabled;
 };
 
 extern AppConfig gConfig;
