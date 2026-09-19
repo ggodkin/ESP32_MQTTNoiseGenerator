@@ -21,14 +21,14 @@ void temperatureSetup() {
 #if DS18B20_ENABLED
   sensors.begin();
   sensors.setWaitForConversion(false);
-  Serial.printf("[TEMP] DS18B20 enabled on GPIO %d; devices=%d\n",
-                DS18B20_PIN, sensors.getDeviceCount());
+  Serial.printf("[TEMP] DS18B20 driver ready on GPIO %d; enabled=%s; devices=%d\n",
+                DS18B20_PIN, gConfig.tempEnabled ? "yes" : "no", sensors.getDeviceCount());
 #endif
 }
 
 void temperaturePublish() {
 #if DS18B20_ENABLED
-  if (!mqttIsConnected() || sensors.getDeviceCount() < 1) return;
+  if (!gConfig.tempEnabled || !mqttIsConnected() || sensors.getDeviceCount() < 1) return;
   sensors.requestTemperatures();
   lastRead = millis();
   conversionPending = true;
@@ -37,7 +37,7 @@ void temperaturePublish() {
 
 void temperatureLoop() {
 #if DS18B20_ENABLED
-  if (!mqttIsConnected()) {
+  if (!gConfig.tempEnabled || !mqttIsConnected()) {
     conversionPending = false;
     return;
   }
