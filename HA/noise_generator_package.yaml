@@ -6,6 +6,13 @@
 # For multiple generators, duplicate the input_select and automation blocks
 # with a unique helper/entity name per generator.
 
+input_datetime:
+  noise_gen_temperature_last_update:
+    name: Noise Generator Temperature Last Update
+    has_date: true
+    has_time: true
+    icon: mdi:clock-check-outline
+
 input_select:
   noise_gen_mode:
     name: Noise Mode
@@ -18,6 +25,11 @@ input_select:
 
 template:
   - sensor:
+      - name: NoiseGen Temperature Last Update
+        unique_id: noisegen_temperature_last_update
+        device_class: timestamp
+        state: "{{ states('input_datetime.noise_gen_temperature_last_update') }}"
+
       - name: NoiseGen Mode Friendly
         unique_id: noise_gen_mode_friendly
         state: >
@@ -30,6 +42,20 @@ template:
           {% endif %}
 
 automation:
+  - id: noisegen_temperature_last_update
+    alias: NoiseGen - Temperature Last Update
+    description: Record the Home Assistant time whenever a temperature MQTT message is received.
+    trigger:
+      - platform: mqtt
+        topic: bedroom/noise/temperature
+    action:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.noise_gen_temperature_last_update
+        data:
+          timestamp: "{{ now().timestamp() }}"
+    mode: restart
+
   - id: noisegen_mode_control
     alias: NoiseGen - Mode Control
     description: Convert the friendly Home Assistant mode helper to the numeric MQTT value used by the ESP32.
