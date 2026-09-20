@@ -14,6 +14,7 @@ struct AppConfig {
   String mqttPass;
   String mqttBase;
   String mqttId;
+  String haUniqueId;
   bool tempEnabled;
   uint32_t tempIntervalSec;
 };
