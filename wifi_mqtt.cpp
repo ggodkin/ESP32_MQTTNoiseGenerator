@@ -157,13 +157,13 @@ void mqttPublishDiscovery() {
   );
 
   dbgPub(
-    "homeassistant/sensor/" + modeId + "/config",
+    "homeassistant/select/" + modeId + "/config",
     "{\"name\":\"Mode\","
     "\"uniq_id\":\"" + modeId + "\","
     "\"~\":\"" + base + "\","
     "\"stat_t\":\"~/mode\","
-    "\"dev_cla\":\"enum\","
-    "\"options\":[\"0\",\"1\",\"2\",\"3\"],"
+    "\"cmd_t\":\"~/mode/set\","
+    "\"options\":[\"White\",\"Pink\",\"Brown\",\"Blue\"],"
     + dev + "}"
   );
 
@@ -294,7 +294,14 @@ void mqttPublishState() {
                 g_detentCount, (int)g_noiseMode, g_muted);
 
   mqtt.publish((base + "gain").c_str(), String(g_detentCount).c_str(), true);
-  mqtt.publish((base + "mode").c_str(), String((int)g_noiseMode).c_str(), true);
+
+  const char* modeName =
+    (g_noiseMode == MODE_WHITE) ? "White" :
+    (g_noiseMode == MODE_PINK)  ? "Pink"  :
+    (g_noiseMode == MODE_BROWN) ? "Brown" :
+                                   "Blue";
+  mqtt.publish((base + "mode").c_str(), modeName, true);
+
   mqtt.publish((base + "mute").c_str(), g_muted ? "ON" : "OFF", true);
 }
 
