@@ -38,7 +38,7 @@ void setDefaultConfig() {
   gConfig.mqttPass   = "";
   gConfig.mqttBase   = "bedroom/noise";
   gConfig.mqttId     = "esp32-noise-1";
-  gConfig.tempEnabled = false;
+  gConfig.tempEnabled = false;\n  gConfig.tempIntervalSec = 30;
 }
 }
 
@@ -156,7 +156,7 @@ void loadConfigFromNvs() {
   gConfig.mqttPass   = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
   gConfig.mqttBase   = cfgPrefs.getString("mqttBase", gConfig.mqttBase);
   gConfig.mqttId     = cfgPrefs.getString("mqttId", gConfig.mqttId);
-  gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
+  gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);\n  gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);\n  if (gConfig.tempIntervalSec < 1) gConfig.tempIntervalSec = 30;
   cfgPrefs.end();
 
   Serial.println("[CFG] Configuration loaded from NVS");
@@ -176,7 +176,7 @@ void saveConfigToNvs() {
   cfgPrefs.putString("mqttPass",   gConfig.mqttPass.substring(0, 63));
   cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 31));
   cfgPrefs.putString("mqttId",     gConfig.mqttId.substring(0, 31));
-  cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);
+  cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);\n  cfgPrefs.putUInt("tempInterval",   gConfig.tempIntervalSec);
   cfgPrefs.end();
 
   Serial.println("[CFG] Configuration saved to NVS");
@@ -351,13 +351,19 @@ void startConfigPortal() {
   WiFiManagerParameter p_mqtt_pass("mqtt_pass", "MQTT Password", gConfig.mqttPass.c_str(), 64, "input type=\"password\"");
   WiFiManagerParameter p_mqtt_base("mqtt_base", "MQTT Base Topic", gConfig.mqttBase.c_str(), 40);
   WiFiManagerParameter p_temp_enabled("temp_enabled", "Enable DS18B20 temperature (T/F)", gConfig.tempEnabled ? "T" : "F", 2);
+  WiFiManagerParameter p_temp_interval(
+    "temp_interval",
+    "Temperature update interval (seconds)",
+    String(gConfig.tempIntervalSec).c_str(),
+    6
+  );
 
   wm.addParameter(&p_mqtt_server);
   wm.addParameter(&p_mqtt_port);
   wm.addParameter(&p_mqtt_user);
   wm.addParameter(&p_mqtt_pass);
   wm.addParameter(&p_mqtt_base);
-  wm.addParameter(&p_temp_enabled);
+  wm.addParameter(&p_temp_enabled);\n  wm.addParameter(&p_temp_interval);
 
   bool ok = wm.startConfigPortal("ESP32-Noise");
   Serial.printf("[WIFI] Portal finished, ok=%d\n", ok);
@@ -374,6 +380,10 @@ void startConfigPortal() {
     String tempValue = p_temp_enabled.getValue();
     tempValue.trim();
     gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") || tempValue == "1" || tempValue.equalsIgnoreCase("true");
+    uint32_t interval = String(p_temp_interval.getValue()).toInt();
+    if (interval < 1) interval = 30;
+    if (interval > 3600) interval = 3600;
+    gConfig.tempIntervalSec = interval;
 
     gConfig.wifiSsid.trim();
     gConfig.wifiPass.trim();
