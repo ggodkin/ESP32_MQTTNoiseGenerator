@@ -158,13 +158,25 @@ void loadConfigFromNvs() {
   gConfig.mqttPass   = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
   gConfig.mqttBase   = cfgPrefs.getString("mqttBase", gConfig.mqttBase);
   gConfig.mqttId     = cfgPrefs.getString("mqttId", gConfig.mqttId);
-  gConfig.haUniqueId = cfgPrefs.getString("haUniqueId", gConfig.haUniqueId);
-  gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
-  gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);
+  if (cfgPrefs.isKey("haUniqueId")) {
+    gConfig.haUniqueId = cfgPrefs.getString("haUniqueId", gConfig.haUniqueId);
+  }
+  if (cfgPrefs.isKey("tempEnabled")) {
+    gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
+  }
+  if (cfgPrefs.isKey("tempInterval")) {
+    gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);
+  }
   if (gConfig.tempIntervalSec < 1) gConfig.tempIntervalSec = 30;
   if (!gConfig.haUniqueId.length()) gConfig.haUniqueId = gConfig.mqttId;
   cfgPrefs.end();
 
+  Serial.printf("[CFG] Loaded mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\n",
+                gConfig.mqttBase.c_str(),
+                gConfig.mqttId.c_str(),
+                gConfig.haUniqueId.c_str(),
+                gConfig.tempEnabled ? 1 : 0,
+                (unsigned long)gConfig.tempIntervalSec);
   Serial.println("[CFG] Configuration loaded from NVS");
 }
 
@@ -180,7 +192,7 @@ void saveConfigToNvs() {
   cfgPrefs.putString("mqttPort",   gConfig.mqttPort.substring(0, 5));
   cfgPrefs.putString("mqttUser",   gConfig.mqttUser.substring(0, 31));
   cfgPrefs.putString("mqttPass",   gConfig.mqttPass.substring(0, 63));
-  cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 31));
+  cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 63));
   cfgPrefs.putString("mqttId",     gConfig.mqttId.substring(0, 31));
   cfgPrefs.putString("haUniqueId", gConfig.haUniqueId.substring(0, 63));
   cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);
@@ -420,6 +432,13 @@ void startConfigPortal() {
     gConfig.haUniqueId.trim();
     if (!gConfig.mqttId.length()) gConfig.mqttId = "esp32-noise-1";
     if (!gConfig.haUniqueId.length()) gConfig.haUniqueId = gConfig.mqttId;
+
+    Serial.printf("[CFG] Portal values: mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\n",
+                  gConfig.mqttBase.c_str(),
+                  gConfig.mqttId.c_str(),
+                  gConfig.haUniqueId.c_str(),
+                  gConfig.tempEnabled ? 1 : 0,
+                  (unsigned long)gConfig.tempIntervalSec);
 
     saveConfigToNvs();
 
