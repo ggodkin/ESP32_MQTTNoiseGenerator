@@ -38,6 +38,7 @@ void setDefaultConfig() {
   gConfig.mqttPass   = "";
   gConfig.mqttBase   = "bedroom/noise";
   gConfig.mqttId     = "esp32-noise-1";
+  gConfig.haUniqueId = "esp32-noise-1";
   gConfig.tempEnabled = false;
   gConfig.tempIntervalSec = 30;
 }
@@ -56,7 +57,7 @@ void mqttPublishDiscovery() {
   String base = gConfig.mqttBase;
   if (base.endsWith("/")) base.remove(base.length() - 1);
 
-  String deviceId = gConfig.mqttId.length() ? gConfig.mqttId : "esp32-noise-1";
+  String deviceId = gConfig.haUniqueId.length() ? gConfig.haUniqueId : (gConfig.mqttId.length() ? gConfig.mqttId : "esp32-noise-1");
   String dev = "\"dev\":{\"ids\":[\"" + deviceId +
                "\"],\"name\":\"NoiseGen - " + deviceId + "\"}";
   String gainId = deviceId + "_gain";
@@ -157,9 +158,11 @@ void loadConfigFromNvs() {
   gConfig.mqttPass   = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
   gConfig.mqttBase   = cfgPrefs.getString("mqttBase", gConfig.mqttBase);
   gConfig.mqttId     = cfgPrefs.getString("mqttId", gConfig.mqttId);
+  gConfig.haUniqueId = cfgPrefs.getString("haUniqueId", gConfig.haUniqueId);
   gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
   gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);
   if (gConfig.tempIntervalSec < 1) gConfig.tempIntervalSec = 30;
+  if (!gConfig.haUniqueId.length()) gConfig.haUniqueId = gConfig.mqttId;
   cfgPrefs.end();
 
   Serial.println("[CFG] Configuration loaded from NVS");
@@ -179,8 +182,18 @@ void saveConfigToNvs() {
   cfgPrefs.putString("mqttPass",   gConfig.mqttPass.substring(0, 63));
   cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 31));
   cfgPrefs.putString("mqttId",     gConfig.mqttId.substring(0, 31));
+  cfgPrefs.putString("haUniqueId", gConfig.haUniqueId.substring(0, 63));
   cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);
   cfgPrefs.putUInt("tempInterval",   gConfig.tempIntervalSec);
+
+  String savedBase = cfgPrefs.getString("mqttBase", "");
+  String savedId = cfgPrefs.getString("mqttId", "");
+  String savedHa = cfgPrefs.getString("haUniqueId", "");
+  bool savedTemp = cfgPrefs.getBool("tempEnabled", false);
+  uint32_t savedInterval = cfgPrefs.getUInt("tempInterval", 0);
+  Serial.printf("[CFG] Saved mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\n",
+                savedBase.c_str(), savedId.c_str(), savedHa.c_str(),
+                savedTemp ? 1 : 0, (unsigned long)savedInterval);
   cfgPrefs.end();
 
   Serial.println("[CFG] Configuration saved to NVS");
@@ -354,6 +367,8 @@ void startConfigPortal() {
   WiFiManagerParameter p_mqtt_user("mqtt_user", "MQTT Username", gConfig.mqttUser.c_str(), 32);
   WiFiManagerParameter p_mqtt_pass("mqtt_pass", "MQTT Password", gConfig.mqttPass.c_str(), 64, "input type=\"password\"");
   WiFiManagerParameter p_mqtt_base("mqtt_base", "MQTT Base Topic", gConfig.mqttBase.c_str(), 40);
+  WiFiManagerParameter p_mqtt_id("mqtt_id", "MQTT Client ID", gConfig.mqttId.c_str(), 31);
+  WiFiManagerParameter p_ha_unique_id("ha_unique_id", "Home Assistant Unique ID", gConfig.haUniqueId.c_str(), 63);
   WiFiManagerParameter p_temp_enabled("temp_enabled", "Enable DS18B20 temperature (T/F)", gConfig.tempEnabled ? "T" : "F", 2);
   WiFiManagerParameter p_temp_interval(
     "temp_interval",
@@ -367,6 +382,8 @@ void startConfigPortal() {
   wm.addParameter(&p_mqtt_user);
   wm.addParameter(&p_mqtt_pass);
   wm.addParameter(&p_mqtt_base);
+  wm.addParameter(&p_mqtt_id);
+  wm.addParameter(&p_ha_unique_id);
   wm.addParameter(&p_temp_enabled);
   wm.addParameter(&p_temp_interval);
 
@@ -382,6 +399,8 @@ void startConfigPortal() {
     gConfig.mqttUser   = p_mqtt_user.getValue();
     gConfig.mqttPass   = p_mqtt_pass.getValue();
     gConfig.mqttBase   = p_mqtt_base.getValue();
+    gConfig.mqttId     = p_mqtt_id.getValue();
+    gConfig.haUniqueId = p_ha_unique_id.getValue();
     String tempValue = p_temp_enabled.getValue();
     tempValue.trim();
     gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") || tempValue == "1" || tempValue.equalsIgnoreCase("true");
@@ -397,6 +416,10 @@ void startConfigPortal() {
     gConfig.mqttUser.trim();
     gConfig.mqttPass.trim();
     gConfig.mqttBase.trim();
+    gConfig.mqttId.trim();
+    gConfig.haUniqueId.trim();
+    if (!gConfig.mqttId.length()) gConfig.mqttId = "esp32-noise-1";
+    if (!gConfig.haUniqueId.length()) gConfig.haUniqueId = gConfig.mqttId;
 
     saveConfigToNvs();
 
