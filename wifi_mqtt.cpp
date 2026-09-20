@@ -17,6 +17,8 @@ WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
 WiFiManager wm;
 
+void saveConfigToNvs();
+
 // WiFiManager custom parameter pointers. They remain valid while the
 // blocking configuration portal is active and allow the Save action to
 // persist custom parameters immediately.
