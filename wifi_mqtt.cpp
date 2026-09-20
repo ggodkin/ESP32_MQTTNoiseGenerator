@@ -38,7 +38,8 @@ void setDefaultConfig() {
   gConfig.mqttPass   = "";
   gConfig.mqttBase   = "bedroom/noise";
   gConfig.mqttId     = "esp32-noise-1";
-  gConfig.tempEnabled = false;\n  gConfig.tempIntervalSec = 30;
+  gConfig.tempEnabled = false;
+  gConfig.tempIntervalSec = 30;
 }
 }
 
@@ -156,7 +157,9 @@ void loadConfigFromNvs() {
   gConfig.mqttPass   = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
   gConfig.mqttBase   = cfgPrefs.getString("mqttBase", gConfig.mqttBase);
   gConfig.mqttId     = cfgPrefs.getString("mqttId", gConfig.mqttId);
-  gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);\n  gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);\n  if (gConfig.tempIntervalSec < 1) gConfig.tempIntervalSec = 30;
+  gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
+  gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);
+  if (gConfig.tempIntervalSec < 1) gConfig.tempIntervalSec = 30;
   cfgPrefs.end();
 
   Serial.println("[CFG] Configuration loaded from NVS");
@@ -176,7 +179,8 @@ void saveConfigToNvs() {
   cfgPrefs.putString("mqttPass",   gConfig.mqttPass.substring(0, 63));
   cfgPrefs.putString("mqttBase",   gConfig.mqttBase.substring(0, 31));
   cfgPrefs.putString("mqttId",     gConfig.mqttId.substring(0, 31));
-  cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);\n  cfgPrefs.putUInt("tempInterval",   gConfig.tempIntervalSec);
+  cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);
+  cfgPrefs.putUInt("tempInterval",   gConfig.tempIntervalSec);
   cfgPrefs.end();
 
   Serial.println("[CFG] Configuration saved to NVS");
@@ -363,7 +367,8 @@ void startConfigPortal() {
   wm.addParameter(&p_mqtt_user);
   wm.addParameter(&p_mqtt_pass);
   wm.addParameter(&p_mqtt_base);
-  wm.addParameter(&p_temp_enabled);\n  wm.addParameter(&p_temp_interval);
+  wm.addParameter(&p_temp_enabled);
+  wm.addParameter(&p_temp_interval);
 
   bool ok = wm.startConfigPortal("ESP32-Noise");
   Serial.printf("[WIFI] Portal finished, ok=%d\n", ok);
