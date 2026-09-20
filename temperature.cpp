@@ -59,7 +59,7 @@ void temperatureLoop() {
     Serial.printf("[TEMP] %.2f C published\n", c);
   }
 
-  if (!conversionPending && now - lastRead >= DS18B20_INTERVAL_MS) {
+  if (!conversionPending && now - lastRead >= ((unsigned long)gConfig.tempIntervalSec * 1000UL)) {
     temperaturePublish();
   }
 #endif
