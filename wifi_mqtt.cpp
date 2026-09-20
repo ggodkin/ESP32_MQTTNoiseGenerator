@@ -17,6 +17,11 @@ WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
 WiFiManager wm;
 
+// PubSubClient defaults to a small packet buffer. Home Assistant discovery
+// payloads are larger than the default when using configurable device IDs and
+// MQTT base topics, so size the buffer explicitly.
+constexpr uint16_t MQTT_PACKET_BUFFER_SIZE = 768;
+
 void saveConfigToNvs();
 
 // WiFiManager custom parameter pointers. They remain valid while the
@@ -428,6 +433,7 @@ bool mqttReconnect() {
 
 void startConfigPortal() {
   Serial.println("[WIFI] Starting config portal...");
+  mqtt.setBufferSize(MQTT_PACKET_BUFFER_SIZE);
 
   WiFi.disconnect(true);
   WiFi.mode(WIFI_AP_STA);
@@ -540,6 +546,7 @@ void restoreUiState() {
 }
 
 void wifiMqttSetup() {
+  mqtt.setBufferSize(MQTT_PACKET_BUFFER_SIZE);
   loadConfigFromNvs();
 
   if (gConfig.wifiSsid.length() > 0) {
