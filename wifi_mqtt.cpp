@@ -17,6 +17,69 @@ WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
 WiFiManager wm;
 
+// WiFiManager custom parameter pointers. They remain valid while the
+// blocking configuration portal is active and allow the Save action to
+// persist custom parameters immediately.
+namespace {
+WiFiManagerParameter* pMqttServer = nullptr;
+WiFiManagerParameter* pMqttPort = nullptr;
+WiFiManagerParameter* pMqttUser = nullptr;
+WiFiManagerParameter* pMqttPass = nullptr;
+WiFiManagerParameter* pMqttBase = nullptr;
+WiFiManagerParameter* pMqttId = nullptr;
+WiFiManagerParameter* pHaUniqueId = nullptr;
+WiFiManagerParameter* pTempEnabled = nullptr;
+WiFiManagerParameter* pTempInterval = nullptr;
+
+void savePortalParameters() {
+  if (!pMqttServer || !pMqttPort || !pMqttUser || !pMqttPass ||
+      !pMqttBase || !pMqttId || !pHaUniqueId ||
+      !pTempEnabled || !pTempInterval) {
+    Serial.println("[CFG] Portal parameter pointers unavailable");
+    return;
+  }
+
+  gConfig.mqttServer = pMqttServer->getValue();
+  gConfig.mqttPort = pMqttPort->getValue();
+  gConfig.mqttUser = pMqttUser->getValue();
+  gConfig.mqttPass = pMqttPass->getValue();
+  gConfig.mqttBase = pMqttBase->getValue();
+  gConfig.mqttId = pMqttId->getValue();
+  gConfig.haUniqueId = pHaUniqueId->getValue();
+
+  String tempValue = pTempEnabled->getValue();
+  tempValue.trim();
+  gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") ||
+                        tempValue == "1" ||
+                        tempValue.equalsIgnoreCase("true");
+
+  uint32_t interval = String(pTempInterval->getValue()).toInt();
+  if (interval < 1) interval = 30;
+  if (interval > 3600) interval = 3600;
+  gConfig.tempIntervalSec = interval;
+
+  gConfig.mqttServer.trim();
+  gConfig.mqttPort.trim();
+  gConfig.mqttUser.trim();
+  gConfig.mqttPass.trim();
+  gConfig.mqttBase.trim();
+  gConfig.mqttId.trim();
+  gConfig.haUniqueId.trim();
+
+  if (!gConfig.mqttId.length()) gConfig.mqttId = "esp32-noise-1";
+  if (!gConfig.haUniqueId.length()) gConfig.haUniqueId = gConfig.mqttId;
+
+  Serial.printf("[CFG] Portal Save: mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\\n",
+                gConfig.mqttBase.c_str(),
+                gConfig.mqttId.c_str(),
+                gConfig.haUniqueId.c_str(),
+                gConfig.tempEnabled ? 1 : 0,
+                (unsigned long)gConfig.tempIntervalSec);
+
+  saveConfigToNvs();
+}
+}
+
 bool mqttReady = false;
 bool wifiTried = false;
 unsigned long lastWifiAttempt = 0;
@@ -399,6 +462,18 @@ void startConfigPortal() {
   wm.addParameter(&p_temp_enabled);
   wm.addParameter(&p_temp_interval);
 
+  pMqttServer = &p_mqtt_server;
+  pMqttPort = &p_mqtt_port;
+  pMqttUser = &p_mqtt_user;
+  pMqttPass = &p_mqtt_pass;
+  pMqttBase = &p_mqtt_base;
+  pMqttId = &p_mqtt_id;
+  pHaUniqueId = &p_ha_unique_id;
+  pTempEnabled = &p_temp_enabled;
+  pTempInterval = &p_temp_interval;
+
+  wm.setSaveParamsCallback(savePortalParameters);
+
   bool ok = wm.startConfigPortal("ESP32-Noise");
   Serial.printf("[WIFI] Portal finished, ok=%d\n", ok);
 
@@ -406,6 +481,7 @@ void startConfigPortal() {
     gConfig.wifiSsid = WiFi.SSID();
     gConfig.wifiPass = WiFi.psk();
 
+    // Custom parameters are persisted by savePortalParameters() when the user presses Save.
     gConfig.mqttServer = p_mqtt_server.getValue();
     gConfig.mqttPort   = p_mqtt_port.getValue();
     gConfig.mqttUser   = p_mqtt_user.getValue();
