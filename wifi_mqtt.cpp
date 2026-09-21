@@ -440,6 +440,7 @@ bool mqttReconnect() {
 
 void startConfigPortal() {
   Serial.println("[WIFI] Starting config portal...");
+  showSetupMode();
   mqtt.setBufferSize(MQTT_PACKET_BUFFER_SIZE);
 
   WiFi.disconnect(true);
