@@ -3,7 +3,8 @@
 #include <Arduino.h>
 
 // DS18B20 support is compiled in; enable/disable is stored in NVS.
-constexpr bool DS18B20_ENABLED = true;
+// This is a preprocessor flag because the implementation uses #if guards.
+#define DS18B20_ENABLED 1
 constexpr int DS18B20_PIN = 4;
 constexpr unsigned long DS18B20_DEFAULT_INTERVAL_MS = 30000;
 constexpr unsigned long DS18B20_MIN_INTERVAL_MS = 1000;
