@@ -4,6 +4,7 @@
 void ledsSetup();
 void showModeColor(NoiseMode mode);
 void showMute();
+void showSetupMode();
 void updateVolumeLEDs(float ui);
 void handleModeFlash();
 extern bool modeFlashActive;
