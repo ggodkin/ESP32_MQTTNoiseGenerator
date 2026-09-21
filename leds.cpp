@@ -35,6 +35,16 @@ void showModeColor(NoiseMode mode) {
   led.show();
 }
 
+void showSetupMode() {
+  // Setup portal indication: only even-numbered LEDs are lit.
+  // LEDs are numbered 0,2,4,6, leaving 1,3,5,7 dark.
+  uint32_t c = led.Color(255, 255, 255);
+  for (int i = 0; i < LED_COUNT; i++) {
+    led.setPixelColor(i, (i % 2 == 0) ? c : 0);
+  }
+  led.show();
+}
+
 void showMute() {
   for (int i = 0; i < LED_COUNT; i++)
     led.setPixelColor(i, led.Color(255, 0, 0));
