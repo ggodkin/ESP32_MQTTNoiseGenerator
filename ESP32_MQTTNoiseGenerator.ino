@@ -34,9 +34,18 @@ void setup() {
 }
 
 void loop() {
-  // The first loop performs network initialization only after all local
-  // hardware has already been initialized. It is intentionally deferred
-  // from setup() to preserve responsive local startup.
+  // LOCAL CONTROL PATH ALWAYS RUNS FIRST.
+  // Never allow network initialization or network processing to delay
+  // button/encoder handling or audio generation.
+  handleButton();
+  handleGain();
+  handleModeFlash();
+
+  fillAudioBuffer();
+  writeAudioBuffer();
+
+  // Optional services are initialized only after local controls/audio have
+  // received their turn. This prevents Wi-Fi startup from blocking the UI.
   static bool networkInitDone = false;
   if (!networkInitDone) {
     Serial.println("[BOOT] Starting optional WiFi/MQTT services");
@@ -45,14 +54,6 @@ void loop() {
     networkInitDone = true;
     Serial.println("[BOOT] Optional WiFi/MQTT initialization complete");
   }
-
-  // LOCAL CONTROL PATH -- never conditional on Wi-Fi/MQTT/NVS.
-  handleButton();
-  handleGain();
-  handleModeFlash();
-
-  fillAudioBuffer();
-  writeAudioBuffer();
 
   // BACKGROUND SERVICES.
   wifiMqttLoop();
