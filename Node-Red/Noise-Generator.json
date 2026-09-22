@@ -14,7 +14,7 @@
     "func": "const devices={hroom:{label:'H Room',base:'hroom/noise',remote:'hroom'},mbedroom:{label:'Master Bedroom',base:'mbedroom/noise',remote:'mbedroom'}};flow.set('noise_devices',devices);msg.options=Object.entries(devices).map(([value,d])=>({label:d.label,value}));return msg;",
     "outputs": 1,
     "noerr": 0,
-    "initialize": "const devices = {\\n  hroom: { label: 'H Room', base: 'hroom/noise', remote: 'NoiseGen_HRoom' },\\n  mbedroom: { label: 'Master Bedroom', base: 'mbedroom/noise', remote: 'NoiseGen_MBedroom' }\\n};\\nflow.set('noise_devices', devices);\\n",
+    "initialize": "const devices = {\\n  hroom: { label: 'H Room', base: 'hroom/noise', remote: 'hroom' },\\n  mbedroom: { label: 'Master Bedroom', base: 'mbedroom/noise', remote: 'mbedroom' }\\n};\\nflow.set('noise_devices', devices);\\n",
     "finalize": "",
     "libs": [],
     "x": 220,
