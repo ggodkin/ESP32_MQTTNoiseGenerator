@@ -7,8 +7,6 @@
 
 #include "config.h"
 #include "wifi_mqtt.h"
-#include <time.h>
-
 #if DS18B20_ENABLED
 namespace {
 OneWire oneWire(DS18B20_PIN);
@@ -57,28 +55,7 @@ void temperatureLoop() {
     String base = gConfig.deviceName + "/noise/";
     mqttPublishRaw((base + "temperature").c_str(), String(c, 2).c_str(), true);
 
-    // Publish a Home Assistant-compatible UTC timestamp for the last
-    // successful temperature update. Do not publish a bogus timestamp if
-    // NTP time has not been synchronized yet.
-    time_t nowTime = time(nullptr);
-    if (nowTime >= 1704067200) { // 2024-01-01 00:00:00 UTC
-      struct tm utc;
-      gmtime_r(&nowTime, &utc);
-
-      char timestamp[25];
-      strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", &utc);
-
-      bool timestampOk = mqttPublishRaw(
-        (base + "temperature_last_update").c_str(),
-        timestamp,
-        true
-      );
-
-      Serial.printf("[TEMP] %.2f C published; last update=%s (%s)\n",
-                    c, timestamp, timestampOk ? "OK" : "FAIL");
-    } else {
-      Serial.printf("[TEMP] %.2f C published; waiting for NTP time\n", c);
-    }
+    Serial.printf("[TEMP] %.2f C published\n", c);
   }
 
   if (!conversionPending && now - lastRead >= ((unsigned long)gConfig.tempIntervalSec * 1000UL)) {
