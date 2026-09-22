@@ -1,159 +1,97 @@
-ESP32 Noise Generator – Installation, MQTT Topics, Home Assistant Integration, Node‑RED Integration, and Firmware Notes
+ESP32 Noise Generator – Multi-Device Home Assistant and Node-RED Integration
 
-This section documents how the ESP32 Noise Generator integrates with Home Assistant, Node‑RED, and MQTT. It covers installation, MQTT topics, discovery behavior, friendly mode names, dashboard control, and firmware behavior. This block is designed for direct inclusion in a GitHub README file.
+1. Architecture
 
-1. Installation and Requirements
+The ESP32 firmware remains responsible for MQTT state and Home Assistant MQTT Discovery. Home Assistant no longer needs a per-device input_select, template sensor, or mode-conversion automation.
 
-The ESP32 firmware automatically handles WiFi configuration, MQTT connection, and Home Assistant discovery. Enable the Home Assistant MQTT integration. The optional package file provides the friendly mode helper and IKEA E1810 automation.
+Node-RED provides one generic flow for all generators. Device routing is defined in exactly one place: the Device Registry function in `Node-Red/Noise-Generator.json`.
 
-Requirements:
-- ESP32 device running the provided firmware
-- MQTT broker (tested with Mosquitto)
-- Home Assistant with MQTT integration enabled
-- Node‑RED (optional)
-- WiFi network
+For the current installation the registry contains:
+- `hroom` -> `hroom/noise`
+- `mbedroom` -> `mbedroom/noise`
 
-Once the ESP32 connects to WiFi and MQTT, it publishes Home Assistant discovery topics and becomes visible as a device named NoiseGen.
+To add another generator, add one registry entry and configure the new ESP32 with the matching MQTT base topic and unique MQTT/HA IDs.
 
-2. MQTT Topics
+2. MQTT Topic Convention
 
-All MQTT topics use the base prefix:
-bedroom/noise/
+Each generator uses:
 
-State topics published by the ESP32:
-bedroom/noise/mode
-bedroom/noise/gain
-bedroom/noise/mute
-bedroom/noise/heartbeat
+`<device>/noise/<state-or-command>`
 
-Command topics subscribed by the ESP32:
-bedroom/noise/mode/set
-bedroom/noise/gain/set
-bedroom/noise/mute/set
+Current examples:
 
-Payloads:
-Mode: numeric values 0, 1, 2, 3
-Gain: numeric values 0 through 19
-Mute: ON or OFF
-Heartbeat: 1 when online
+`hroom/noise/mode`
+`hroom/noise/gain`
+`hroom/noise/mute`
+`hroom/noise/heartbeat`
+`hroom/noise/temperature`
 
-3. Home Assistant MQTT Discovery
+and the corresponding `/set` command topics.
 
-The ESP32 publishes MQTT discovery messages under the homeassistant/ namespace. Home Assistant automatically creates the following entities:
+The firmware publishes the mode as the friendly text value `White`, `Pink`, `Brown`, or `Blue`. It also accepts numeric mode commands for backward compatibility.
 
-sensor.noisegen_mode_2
-number.gain_2
-switch.mute_2
-binary_sensor.online_2
+3. ESP32 Configuration
 
-Descriptions:
-sensor.noisegen_mode_2 reports the current noise mode as a numeric value (0 to 3)
-number.gain_2 controls the gain level
-switch.mute_2 toggles mute on or off
-binary_sensor.online_2 indicates device heartbeat and online status
+Configure the two generators as follows:
 
-These entities appear under the NoiseGen device in Home Assistant.
+H Room:
+- `mqttId=hroom`
+- `haUniqueId=hroom`
+- `mqttBase=hroom/noise`
 
-4. Friendly Mode Names in Home Assistant
+Master Bedroom:
+- `mqttId=mbedroom`
+- `haUniqueId=mbedroom`
+- `mqttBase=mbedroom/noise`
 
-Home Assistant receives the mode as a numeric value. To display human‑readable names (White, Pink, Brown, Blue), a template sensor is used:
+Use unique Zigbee2MQTT friendly names for the E1810 remotes, for example `NoiseGen_HRoom` and `NoiseGen_MBedroom`.
 
-template:
-  - sensor:
-      - name: "NoiseGen Mode Friendly"
-        unique_id: noise_gen_mode_friendly
-        state: >
-          {% set m = states('sensor.noisegen_mode_2') %}
-          {% if m == '0' %} White
-          {% elif m == '1' %} Pink
-          {% elif m == '2' %} Brown
-          {% elif m == '3' %} Blue
-          {% else %} Unknown {% endif %}
+4. Home Assistant
 
-This template sensor must be placed inside a Home Assistant package file in the packages directory.
+Enable the MQTT integration. Each ESP32 publishes its own discovery configuration and Home Assistant creates a device containing Mode, Gain, Mute, Online, and Temperature when enabled.
 
-5. Mode Control in Home Assistant
+Do not create the old `input_select.noise_gen_mode`, `NoiseGen Mode Friendly`, or per-device mode automations. The discovered Mode entity is already a Home Assistant select with options White, Pink, Brown, and Blue.
 
-Home Assistant uses an input_select helper to allow the user to choose a friendly mode name:
+The file `HA/noise_generator_package.yaml` is intentionally empty of static entities. It can remain in an existing packages directory without recreating the old per-device configuration.
 
-input_select:
-  noise_gen_mode:
-    name: "Noise Mode"
-    options:
-      - White
-      - Pink
-      - Brown
-      - Blue
+Because Home Assistant generates entity IDs from MQTT discovery, the supplied dashboard file is a reference rather than a dynamically generated multi-device dashboard. For multiple devices, use the discovered NoiseGen device cards/entities in the Home Assistant UI.
 
-A Home Assistant automation converts the friendly name into the numeric value required by the ESP32:
+5. Node-RED
 
-automation:
-  - alias: "NoiseGen Mode Control"
-    id: noise_gen_mode_control
-    trigger:
-      - platform: state
-        entity_id: input_select.noise_gen_mode
-    action:
-      - service: mqtt.publish
-        data:
-          topic: "bedroom/noise/mode/set"
-          payload: >
-            {% if trigger.to_state.state == 'White' %} 0
-            {% elif trigger.to_state.state == 'Pink' %} 1
-            {% elif trigger.to_state.state == 'Brown' %} 2
-            {% elif trigger.to_state.state == 'Blue' %} 3
-            {% endif %}
+Import `Node-Red/Noise-Generator.json`. The flow subscribes to wildcard state topics such as `+/noise/gain`, so the same nodes handle both generators.
 
-This preserves numeric mode behavior for firmware and Node‑RED.
+The Device Registry is the only device-specific configuration:
 
-6. Lovelace Dashboard Card
+```
+const devices = {
+  hroom: { label: 'H Room', base: 'hroom/noise', remote: 'NoiseGen_HRoom' },
+  mbedroom: { label: 'Master Bedroom', base: 'mbedroom/noise', remote: 'NoiseGen_MBedroom' }
+};
+```
 
-A simple Lovelace card can be added to the dashboard using the Manual Card editor:
+Select the target generator in the Node-RED dashboard. Gain, mode, and mute commands are automatically sent to the selected generator.
 
-type: vertical-stack
-cards:
-  - type: entities
-    title: Noise Generator
-    entities:
-      - entity: sensor.noisegen_mode_friendly
-        name: Current Mode
-      - entity: input_select.noise_gen_mode
-        name: Set Mode
-      - entity: number.gain_2
-        name: Gain
-      - entity: switch.mute_2
-        name: Mute
-      - entity: binary_sensor.online_2
-        name: Online
+The temperature and heartbeat displays are also selected by device. The previous separate temperature flow is no longer required; `Node-Red/Noise-Generator-Temperature.json` is retained only as a migration placeholder.
 
-This card provides full control and monitoring of the device.
+6. IKEA E1810
 
-7. Node‑RED Integration
+The current firmware/Node-RED changes establish the generator routing convention, but E1810 mapping should use the same registry. Each E1810 friendly name should be unique.
 
-Node‑RED communicates directly with the ESP32 using numeric MQTT payloads. No changes are required to existing flows. The firmware continues to publish and subscribe to numeric mode values, ensuring compatibility. The temperature flow listens to `<mqttBase>/temperature`.
+When implementing E1810 routing in Node-RED, map the Zigbee2MQTT friendly name to the registry entry's `base` value. Do not duplicate MQTT command nodes for each generator.
 
-Node‑RED can read:
-bedroom/noise/mode
-bedroom/noise/gain
-bedroom/noise/mute
-bedroom/noise/heartbeat
+7. Adding a Third Generator
 
-Node‑RED can write:
-bedroom/noise/mode/set
-bedroom/noise/gain/set
-bedroom/noise/mute/set
+Only two places should need configuration:
+1. Configure the ESP32 with its unique `mqttId`, `haUniqueId`, and `mqttBase`.
+2. Add one entry to the Node-RED Device Registry.
 
-Home Assistant and Node‑RED operate independently and do not interfere with each other.
+No new MQTT input/output nodes, mode helpers, or mode conversion automations are required.
 
-8. Optional DS18B20 Temperature\n\nSet `DS18B20_ENABLED` to `true` in `temperature.h`, connect the DS18B20 data line to the configured GPIO (default GPIO 4), and add a 4.7 kOhm pull-up from data to 3.3 V. The firmware publishes `<mqttBase>/temperature` in degrees Celsius and Home Assistant discovers it automatically. Node-RED support is in `Node-Red/Noise-Generator-Temperature.json`.\n\n9. Multiple Noise Generators and E1810 Remotes\n\nEach generator should have a unique MQTT client ID and base topic. Example:\n- Bedroom: `mqttId=noisegen-bedroom`, base `bedroom/noise`\n- Office: `mqttId=noisegen-office`, base `office/noise`\n\nGive each E1810 a unique Zigbee2MQTT name, such as `NoiseGen_Bedroom` and `NoiseGen_Office`, and use a separate HA automation for each remote. This keeps commands isolated while allowing one Mosquitto broker and one Node-RED instance to manage all devices.\n\n10. Firmware Notes
+8. Optional DS18B20 Temperature
 
-The firmware:
-- Publishes MQTT discovery messages on boot
-- Publishes retained state for mode, gain, and mute
-- Subscribes to command topics for mode, gain, and mute
-- Publishes a heartbeat every 90 seconds
-- Stores WiFi and MQTT credentials using WiFiManager
-- Stores gain, mode, and mute state in NVS for persistence
-- Uses numeric mode values for maximum compatibility with Node‑RED
+When enabled in the ESP32 firmware, temperature is published at `<mqttBase>/temperature` and discovered automatically by Home Assistant. The generic Node-RED flow also handles it automatically.
 
-No firmware changes are required for Home Assistant integration.
+9. Firmware Notes
+
+The firmware publishes MQTT discovery, retained state for mode/gain/mute, heartbeat, and optional temperature. Mode discovery is a Home Assistant select using White/Pink/Brown/Blue.
+
