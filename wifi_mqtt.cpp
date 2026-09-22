@@ -103,6 +103,7 @@ void mqttPublishDiscovery() {
   String modeId = deviceId + "_mode";
   String muteId = deviceId + "_mute";
   String onlineId = deviceId + "_online";
+  String tempUpdatedId = deviceId + "_temperature_last_update";
 
   // Arduino String concatenation returns StringSumHelper for some expressions.
   // Accept String here so discovery topics compile correctly.
@@ -163,6 +164,17 @@ void mqttPublishDiscovery() {
     );
   }
 #endif
+
+  dbgPub(
+    "homeassistant/sensor/" + tempUpdatedId + "/config",
+    "{\"name\":\"Temperature Last Update\","
+    "\"uniq_id\":\"" + tempUpdatedId + "\","
+    "\"~\":\"" + base + "\","
+    "\"stat_t\":\"~/temperature_last_update\","
+    "\"device_class\":\"timestamp\","
+    "\"entity_category\":\"diagnostic\","
+    + dev + "}"
+  );
 
   dbgPub(
     "homeassistant/binary_sensor/" + onlineId + "/config",
