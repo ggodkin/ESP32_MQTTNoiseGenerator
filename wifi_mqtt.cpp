@@ -164,8 +164,6 @@ void mqttPublishDiscovery() {
   }
 #endif
 
-#endif
-
   dbgPub(
     "homeassistant/binary_sensor/" + onlineId + "/config",
     "{\"name\":\"Online\","
