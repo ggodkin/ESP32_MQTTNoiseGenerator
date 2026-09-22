@@ -265,7 +265,7 @@
     "type": "function",
     "z": "tab_noise",
     "name": "Store & Update UI",
-    "func": "const m = msg.topic.match(/^([^/]+)\\/noise\\/([^/]+)$/);\nif (!m) return null;\nconst device = m[1];\nconst kind = m[2];\nconst states = flow.get('noise_states') || {};\nstates[device] = states[device] || {};\nstates[device][kind] = msg.payload;\nstates[device].last = new Date().toISOString();\nflow.set('noise_states', states);\nif (device !== (flow.get('noise_selected_device') || 'hroom')) return null;\nmsg.device = device;\nmsg.kind = kind;\nreturn msg;",
+    "func": "const m = msg.topic.match(/^([^/]+)\\/noise\\/([^/]+)$/);\nif (!m) return null;\nconst device = m[1];\nconst kind = m[2];\nconst states = flow.get('noise_states') || {};\nstates[device] = states[device] || {};\nstates[device][kind] = msg.payload;\nstates[device].last = new Date().toISOString();\nflow.set('noise_states', states);\n\nif (kind === 'temperature') {\n  const devices = flow.get('noise_devices') || {};\n  const d = devices[device];\n  if (d) {\n    node.send({topic: d.base + '/temperature_last_update', payload: new Date().toISOString(), retain: true});\n  }\n}\nif (device !== (flow.get('noise_selected_device') || 'hroom')) return null;\nmsg.device = device;\nmsg.kind = kind;\nreturn msg;",
     "outputs": 1,
     "noerr": 0,
     "x": 400,
