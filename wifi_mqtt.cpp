@@ -300,9 +300,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   if (t == base + "gain/set") {
     g_detentCount = constrain(msg.toInt(), ENC_MIN, ENC_MAX);
     changed = true;
-    float ui = (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN);
+    float ui = fminf(fmaxf(
+      (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN),
+      0.0f), 1.0f);
     updateVolumeLEDs(ui);
-    if (!g_muted) showModeColor(g_noiseMode);
   }
   else if (t == base + "mode/set") {
     int m = -1;
