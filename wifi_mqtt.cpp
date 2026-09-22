@@ -172,7 +172,9 @@ void mqttPublishDiscovery() {
     "\"~\":\"" + base + "\","
     "\"stat_t\":\"~/temperature_last_update\","
     "\"device_class\":\"timestamp\","
+    "\"value_template\":\"{{ as_datetime(value) }}\","
     "\"entity_category\":\"diagnostic\","
+    "\"enabled_by_default\":true,"
     + dev + "}"
   );
 
