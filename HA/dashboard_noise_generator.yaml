@@ -1,21 +1,16 @@
-type: grid
-cards:
-  - type: vertical-stack
-    cards:
-      - type: entities
-        title: Noise Generator
-        entities:
-          - entity: sensor.noisegen_mode_2
-            name: Current Mode
-          - entity: input_select.noise_gen_mode
-            name: Set Mode
-          - entity: number.gain_2
-            name: Gain
-          - entity: switch.mute_2
-            name: Mute
-          - entity: binary_sensor.online_2
-            name: Online
-          - entity: sensor.noisegen_temperature
-            name: Temperature
-          - entity: sensor.noisegen_temperature_last_update
-            name: Last Temperature Update
+# MQTT Discovery creates a separate NoiseGen device in Home Assistant
+# for every ESP32. Use the device's automatically discovered entities in
+# the Home Assistant dashboard.
+#
+# This file is intentionally a reference card rather than a device-specific
+# dashboard because Home Assistant entity IDs are generated from discovery
+# and can differ between installations.
+#
+# For each NoiseGen device, add an Entities card containing the discovered:
+#   - Mode
+#   - Gain
+#   - Mute
+#   - Online
+#   - Temperature (when DS18B20 is enabled)
+#
+# No input_select or template entities are required.
