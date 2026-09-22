@@ -547,9 +547,13 @@ void restoreUiState() {
   if (g_muted) {
     showMute();
   } else {
-    float ui = (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN);
+    // Restore the normal volume indication. updateVolumeLEDs() already
+    // applies the current mode color, so do not call showModeColor() here;
+    // that would light all LEDs regardless of the gain setting.
+    float ui = fminf(fmaxf(
+      (float)(g_detentCount - ENC_MIN) / (float)(ENC_MAX - ENC_MIN),
+      0.0f), 1.0f);
     updateVolumeLEDs(ui);
-    showModeColor(g_noiseMode);
   }
 }
 
