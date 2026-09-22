@@ -418,7 +418,7 @@
     "onvalueType": "str",
     "onicon": "",
     "oncolor": "",
-    "offvalue": "",
+    "offvalue": "OFF",
     "offvalueType": "str",
     "officon": "",
     "offcolor": "",
