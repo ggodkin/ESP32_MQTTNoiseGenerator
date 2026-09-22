@@ -35,14 +35,14 @@ The firmware publishes the mode as the friendly text value `White`, `Pink`, `Bro
 Configure the two generators as follows:
 
 H Room:
-- `mqttId=hroom`
-- `haUniqueId=hroom`
-- `mqttBase=hroom/noise`
+- `noisegen-<deviceName>=hroom`
+- `noisegen-<deviceName>=hroom`
+- `<deviceName>/noise=hroom/noise`
 
 Master Bedroom:
-- `mqttId=mbedroom`
-- `haUniqueId=mbedroom`
-- `mqttBase=mbedroom/noise`
+- `noisegen-<deviceName>=mbedroom`
+- `noisegen-<deviceName>=mbedroom`
+- `<deviceName>/noise=mbedroom/noise`
 
 Use unique Zigbee2MQTT friendly names for the E1810 remotes, for example `NoiseGen_HRoom` and `NoiseGen_MBedroom`.
 
@@ -82,16 +82,21 @@ When implementing E1810 routing in Node-RED, map the Zigbee2MQTT friendly name t
 7. Adding a Third Generator
 
 Only two places should need configuration:
-1. Configure the ESP32 with its unique `mqttId`, `haUniqueId`, and `mqttBase`.
+1. Configure the ESP32 with its unique `noisegen-<deviceName>`, `noisegen-<deviceName>`, and `<deviceName>/noise`.
 2. Add one entry to the Node-RED Device Registry.
 
 No new MQTT input/output nodes, mode helpers, or mode conversion automations are required.
 
 8. Optional DS18B20 Temperature
 
-When enabled in the ESP32 firmware, temperature is published at `<mqttBase>/temperature` and discovered automatically by Home Assistant. The generic Node-RED flow also handles it automatically.
+When enabled in the ESP32 firmware, temperature is published at `<<deviceName>/noise>/temperature` and discovered automatically by Home Assistant. The generic Node-RED flow also handles it automatically.
 
 9. Firmware Notes
 
 The firmware publishes MQTT discovery, retained state for mode/gain/mute, heartbeat, and optional temperature. Mode discovery is a Home Assistant select using White/Pink/Brown/Blue.
 
+
+
+Firmware device identity
+-------------------------
+Each ESP32 stores only one persistent identity value: Device Name. The firmware derives the MQTT base topic as <deviceName>/noise, the MQTT client ID as noisegen-<deviceName>, and the Home Assistant unique ID as noisegen-<deviceName>. Set Device Name to hroom on the H Room unit and mbedroom on the Master Bedroom unit. MQTT server/port, credentials, temperature settings, and other independent configuration remain separate NVS settings.
