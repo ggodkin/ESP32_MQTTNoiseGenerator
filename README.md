@@ -1,7 +1,7 @@
 ESP32 MQTT Noise Generator
 ==========================
 
-A high-quality ESP32-based broadband noise generator with rotary encoder control, LED volume bar, multiple noise modes, MQTT integration, WiFiManager configuration portal, and persistent NVS configuration for WiFi and MQTT. Designed for stable 24/7 operation with clean boot behavior, deterministic LED/UI state, and safe non-blocking MQTT operation.
+A high-quality ESP32-based broadband noise generator with rotary encoder control, LED volume bar, multiple noise modes, MQTT integration, WiFiManager configuration portal, and persistent NVS configuration for WiFi, MQTT, and device identity. Designed for stable 24/7 operation with clean boot behavior, deterministic LED/UI state, and safe non-blocking MQTT operation.
 
 Features
 --------
@@ -94,8 +94,7 @@ MQTT server
 MQTT port
 MQTT username
 MQTT password
-MQTT base topic
-MQTT client ID
+Device name (canonical identity)
 
 To enter configuration mode:
 Hold the button for 3+ seconds
@@ -127,14 +126,14 @@ HA integration files are in the `HA/` directory:
 - `noise_generator_package.yaml`: mode helper and IKEA E1810 automation
 - `dashboard_noise_generator.yaml`: Lovelace dashboard card
 
-The firmware publishes MQTT Discovery automatically. The MQTT client ID (`mqttId`) is used as the Home Assistant device ID, so each generator should have a unique ID such as `noisegen-bedroom`, `noisegen-office`, or `noisegen-nursery`.
+The firmware publishes MQTT Discovery automatically. Each generator stores only a canonical **Device Name** in NVS. From that name the firmware derives the MQTT base topic, MQTT client ID, and Home Assistant unique ID. For example, `hroom` derives `hroom/noise` and `noisegen-hroom`; `mbedroom` derives `mbedroom/noise` and `noisegen-mbedroom`. Each generator should have a unique Device Name.nursery`.
 
-For multiple generators, give each device its own MQTT base topic, for example:
+For multiple generators, give each device a unique Device Name; the MQTT base topic is automatically derived as `<deviceName>/noise`.
 - `bedroom/noise`
 - `office/noise`
 - `nursery/noise`
 
-Also give each associated IKEA E1810 remote a unique Zigbee2MQTT friendly name and create one automation per generator. Do not use the same MQTT command topics for multiple generators unless you intentionally want them to operate together.
+Also give each associated IKEA E1810 remote a unique Zigbee2MQTT friendly name. Node-RED can then route each remote to the matching device registry entry. Do not use the same MQTT command topics for multiple generators unless you intentionally want them to operate together.
 
 Optional DS18B20
 ----------------
