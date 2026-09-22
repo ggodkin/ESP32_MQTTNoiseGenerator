@@ -5,6 +5,7 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>
 #include <Preferences.h>
+#include <time.h>
 
 #include "config.h"
 #include "audio_engine.h"
@@ -68,6 +69,7 @@ unsigned long lastMqttHeartbeat = 0;
 const unsigned long MQTT_HEARTBEAT_INTERVAL = 90000;
 
 bool mqttNeedsPublish = false;
+bool ntpSyncStarted = false;
 
 namespace {
 void setDefaultConfig() {
@@ -523,6 +525,16 @@ void wifiMqttLoop() {
       Serial.println("[WIFI] Attempting reconnect...");
       WiFi.mode(WIFI_STA);
       WiFi.begin(gConfig.wifiSsid.c_str(), gConfig.wifiPass.c_str());
+    }
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    // Start SNTP once Wi-Fi is available. Temperature timestamps are
+    // published in UTC and therefore do not depend on local timezone settings.
+    if (!ntpSyncStarted) {
+      configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+      ntpSyncStarted = true;
+      Serial.println("[TIME] NTP synchronization started");
     }
   }
 
