@@ -126,7 +126,7 @@ HA integration files are in the `HA/` directory:
 - `noise_generator_package.yaml`: mode helper and IKEA E1810 automation
 - `dashboard_noise_generator.yaml`: Lovelace dashboard card
 
-The firmware publishes MQTT Discovery automatically. Each generator stores only a canonical **Device Name** in NVS. From that name the firmware derives the MQTT base topic, MQTT client ID, and Home Assistant unique ID. For example, `hroom` derives `hroom/noise` and `noisegen-hroom`; `mbedroom` derives `mbedroom/noise` and `noisegen-mbedroom`. Each generator should have a unique Device Name.nursery`.
+The firmware publishes MQTT Discovery automatically. Each generator stores only a canonical **Device Name** in NVS. From that name the firmware derives the MQTT base topic, MQTT client ID, and Home Assistant unique ID. For example, `hroom` derives `hroom/noise` and `noisegen-hroom`; `mbedroom` derives `mbedroom/noise` and `noisegen-mbedroom`. Each generator should have a unique Device Name.
 
 For multiple generators, give each device a unique Device Name; the MQTT base topic is automatically derived as `<deviceName>/noise`.
 - `bedroom/noise`
@@ -137,7 +137,7 @@ Also give each associated IKEA E1810 remote a unique Zigbee2MQTT friendly name. 
 
 Optional DS18B20
 ----------------
-The DS18B20 driver is compiled in, but the sensor is disabled by default. Its enable/disable state is stored in NVS and can be changed from the WiFiManager configuration portal using **Enable DS18B20 temperature (T/F)**. The data line remains on `DS18B20_PIN` (default GPIO 4), with a 4.7 kOhm pull-up from data to 3.3 V. Install the locked OneWire and DallasTemperature libraries. When enabled, the firmware publishes temperature in °C to `<mqttBase>/temperature` and advertises it through Home Assistant MQTT Discovery. Node-RED support is provided by `Node-Red/Noise-Generator-Temperature.json`.
+The DS18B20 driver is compiled in, but the sensor is disabled by default. Its enable/disable state is stored in NVS and can be changed from the WiFiManager configuration portal using **Enable DS18B20 temperature (T/F)**. The data line remains on `DS18B20_PIN` (default GPIO 4), with a 4.7 kOhm pull-up from data to 3.3 V. Install the locked OneWire and DallasTemperature libraries. When enabled, the firmware publishes temperature in °C to `<mqttBase>/temperature` and advertises it through Home Assistant MQTT Discovery. If a dashboard timestamp is desired, use Home Assistant's `last_updated` value for the temperature entity; the ESP32 does not maintain a separate timestamp or synchronize its clock. Node-RED support is provided by `Node-Red/Noise-Generator-Temperature.json`.
 
 Heartbeat
 ---------
