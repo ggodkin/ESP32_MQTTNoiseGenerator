@@ -51,8 +51,9 @@ void savePortalParameters() {
   tempValue.trim();
   gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") || tempValue == "1" || tempValue.equalsIgnoreCase("true");
   uint32_t interval = String(pTempInterval->getValue()).toInt();
-  gConfig.tempIntervalSec = constrain(interval, 1u, 3600u);
-  if (!gConfig.tempIntervalSec) gConfig.tempIntervalSec = 30;
+  if (interval < 1) interval = 30;
+  if (interval > 3600) interval = 3600;
+  gConfig.tempIntervalSec = interval;
   saveConfigToNvs();
 }
 }
@@ -95,7 +96,7 @@ void mqttPublishDiscovery() {
   String base = (gConfig.deviceName + "/noise");
   if (base.endsWith("/")) base.remove(base.length() - 1);
 
-  String deviceId = (String("noisegen-") + gConfig.deviceName).length() ? (String("noisegen-") + gConfig.deviceName) : ((String("noisegen-") + gConfig.deviceName).length() ? (String("noisegen-") + gConfig.deviceName) : "esp32-noise-1");
+  String deviceId = "noisegen-" + gConfig.deviceName;
   String dev = "\"dev\":{\"ids\":[\"" + deviceId +
                "\"],\"name\":\"NoiseGen - " + deviceId + "\"}";
   String gainId = deviceId + "_gain";
@@ -439,7 +440,10 @@ void startConfigPortal() {
     if(!gConfig.deviceName.length()) gConfig.deviceName="noisegen";
     String tv=p_temp_enabled.getValue(); tv.trim();
     gConfig.tempEnabled=tv.equalsIgnoreCase("T")||tv=="1"||tv.equalsIgnoreCase("true");
-    uint32_t iv=String(p_temp_interval.getValue()).toInt(); gConfig.tempIntervalSec=constrain(iv,1u,3600u);
+    uint32_t iv=String(p_temp_interval.getValue()).toInt();
+    if(iv<1) iv=30;
+    if(iv>3600) iv=3600;
+    gConfig.tempIntervalSec=iv;
     saveConfigToNvs();
     mqtt.setServer(gConfig.mqttServer.c_str(),gConfig.mqttPort.toInt());
     mqtt.setCallback(mqttCallback); mqttReady=true;
