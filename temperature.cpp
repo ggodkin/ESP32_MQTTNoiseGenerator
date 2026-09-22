@@ -53,8 +53,7 @@ void temperatureLoop() {
       return;
     }
 
-    String base = gConfig.mqttBase;
-    if (!base.endsWith("/")) base += "/";
+    String base = gConfig.deviceName + "/noise/";
     mqttPublishRaw((base + "temperature").c_str(), String(c, 2).c_str(), true);
     Serial.printf("[TEMP] %.2f C published\n", c);
   }
