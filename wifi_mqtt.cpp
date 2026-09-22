@@ -165,18 +165,24 @@ void mqttPublishDiscovery() {
   }
 #endif
 
-  dbgPub(
-    "homeassistant/sensor/" + tempUpdatedId + "/config",
-    "{\"name\":\"Temperature Last Update\","
-    "\"uniq_id\":\"" + tempUpdatedId + "\","
-    "\"~\":\"" + base + "\","
-    "\"stat_t\":\"~/temperature_last_update\","
-    "\"device_class\":\"timestamp\","
-    "\"value_template\":\"{{ as_datetime(value) }}\","
-    "\"entity_category\":\"diagnostic\","
-    "\"enabled_by_default\":true,"
-    + dev + "}"
-  );
+#if DS18B20_ENABLED
+  if (gConfig.tempEnabled) {
+    String tempUpdatedPayload =
+      "{\"name\":\"Temperature Last Update\","
+      "\"uniq_id\":\"" + tempUpdatedId + "\","
+      "\"~\":\"" + base + "\","
+      "\"stat_t\":\"~/temperature_last_update\","
+      "\"device_class\":\"timestamp\","
+      "\"entity_category\":\"diagnostic\","
+      "\"enabled_by_default\":true,"
+      + dev + "}";
+    Serial.printf("[DISCOVERY] Temperature Last Update config topic: homeassistant/sensor/%s/config\\n", tempUpdatedId.c_str());
+    dbgPub(
+      "homeassistant/sensor/" + tempUpdatedId + "/config",
+      tempUpdatedPayload
+    );
+  }
+#endif
 
   dbgPub(
     "homeassistant/binary_sensor/" + onlineId + "/config",
