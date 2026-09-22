@@ -5,7 +5,6 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>
 #include <Preferences.h>
-#include <time.h>
 
 #include "config.h"
 #include "audio_engine.h"
@@ -69,7 +68,6 @@ unsigned long lastMqttHeartbeat = 0;
 const unsigned long MQTT_HEARTBEAT_INTERVAL = 90000;
 
 bool mqttNeedsPublish = false;
-bool ntpSyncStarted = false;
 
 namespace {
 void setDefaultConfig() {
@@ -105,7 +103,6 @@ void mqttPublishDiscovery() {
   String modeId = deviceId + "_mode";
   String muteId = deviceId + "_mute";
   String onlineId = deviceId + "_online";
-  String tempUpdatedId = deviceId + "_temperature_last_update";
 
   // Arduino String concatenation returns StringSumHelper for some expressions.
   // Accept String here so discovery topics compile correctly.
@@ -167,23 +164,6 @@ void mqttPublishDiscovery() {
   }
 #endif
 
-#if DS18B20_ENABLED
-  if (gConfig.tempEnabled) {
-    String tempUpdatedPayload =
-      "{\"name\":\"Temperature Last Update\","
-      "\"uniq_id\":\"" + tempUpdatedId + "\","
-      "\"~\":\"" + base + "\","
-      "\"stat_t\":\"~/temperature_last_update\","
-      "\"device_class\":\"timestamp\","
-      "\"entity_category\":\"diagnostic\","
-      "\"enabled_by_default\":true,"
-      + dev + "}";
-    Serial.printf("[DISCOVERY] Temperature Last Update config topic: homeassistant/sensor/%s/config\\n", tempUpdatedId.c_str());
-    dbgPub(
-      "homeassistant/sensor/" + tempUpdatedId + "/config",
-      tempUpdatedPayload
-    );
-  }
 #endif
 
   dbgPub(
@@ -525,16 +505,6 @@ void wifiMqttLoop() {
       Serial.println("[WIFI] Attempting reconnect...");
       WiFi.mode(WIFI_STA);
       WiFi.begin(gConfig.wifiSsid.c_str(), gConfig.wifiPass.c_str());
-    }
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    // Start SNTP once Wi-Fi is available. Temperature timestamps are
-    // published in UTC and therefore do not depend on local timezone settings.
-    if (!ntpSyncStarted) {
-      configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-      ntpSyncStarted = true;
-      Serial.println("[TIME] NTP synchronization started");
     }
   }
 
