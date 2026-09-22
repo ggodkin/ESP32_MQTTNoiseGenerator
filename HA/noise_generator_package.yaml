@@ -1,152 +1,20 @@
-# Home Assistant package for the ESP32 MQTT Noise Generator.
+# Home Assistant configuration for the ESP32 MQTT Noise Generator.
 #
-# Copy this file into your Home Assistant packages directory.
-# The entity IDs below match the current discovery entities in this project.
+# Core controls no longer require static helpers or per-device automations.
+# The ESP32 publishes Home Assistant MQTT Discovery entities directly.
 #
-# For multiple generators, duplicate the input_select and automation blocks
-# with a unique helper/entity name per generator.
+# Recommended setup:
+#   1. Enable the Home Assistant MQTT integration.
+#   2. Configure each ESP32 with a unique mqttId, haUniqueId, and mqttBase.
+#   3. Use the discovered NoiseGen device/entities from Home Assistant.
+#
+# Example devices used by the project:
+#   hroom     -> hroom/noise
+#   mbedroom  -> mbedroom/noise
+#
+# This package is intentionally empty so old installations can keep the file
+# without recreating the previous per-device input_select/template/automation
+# configuration. Remove the old generated helpers from Home Assistant after
+# migrating to MQTT Discovery.
 
-input_datetime:
-  noise_gen_temperature_last_update:
-    name: Noise Generator Temperature Last Update
-    has_date: true
-    has_time: true
-    icon: mdi:clock-check-outline
-
-input_select:
-  noise_gen_mode:
-    name: Noise Mode
-    options:
-      - White
-      - Pink
-      - Brown
-      - Blue
-    icon: mdi:waveform
-
-template:
-  - sensor:
-      - name: NoiseGen Temperature Last Update
-        unique_id: noisegen_temperature_last_update
-        device_class: timestamp
-        state: "{{ states('input_datetime.noise_gen_temperature_last_update') }}"
-
-      - name: NoiseGen Mode Friendly
-        unique_id: noise_gen_mode_friendly
-        state: >
-          {% set m = states('sensor.noisegen_mode_2') %}
-          {% if m == '0' %} White
-          {% elif m == '1' %} Pink
-          {% elif m == '2' %} Brown
-          {% elif m == '3' %} Blue
-          {% else %} Unknown
-          {% endif %}
-
-automation:
-  - id: noisegen_temperature_last_update
-    alias: NoiseGen - Temperature Last Update
-    description: Record the Home Assistant time whenever a temperature MQTT message is received.
-    trigger:
-      - platform: mqtt
-        topic: bedroom/noise/temperature
-    action:
-      - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.noise_gen_temperature_last_update
-        data:
-          timestamp: "{{ now().timestamp() }}"
-    mode: restart
-
-  - id: noisegen_mode_control
-    alias: NoiseGen - Mode Control
-    description: Convert the friendly Home Assistant mode helper to the numeric MQTT value used by the ESP32.
-    trigger:
-      - platform: state
-        entity_id: input_select.noise_gen_mode
-    action:
-      - action: mqtt.publish
-        data:
-          topic: bedroom/noise/mode/set
-          payload: >
-            {% if trigger.to_state.state == 'White' %}0
-            {% elif trigger.to_state.state == 'Pink' %}1
-            {% elif trigger.to_state.state == 'Brown' %}2
-            {% elif trigger.to_state.state == 'Blue' %}3
-            {% endif %}
-    mode: restart
-
-  - id: noisegen_e1810_control
-    alias: NoiseGen - E1810 Control
-    description: IKEA E1810 controls the ESP32 Noise Generator through Zigbee2MQTT.
-    trigger:
-      - topic: zigbee2mqtt/NoiseGen
-        trigger: mqtt
-    variables:
-      action: "{{ trigger.payload_json.action | default('') }}"
-      current_gain: "{{ states('number.gain_2') | int(10) }}"
-      current_mode: "{{ states('sensor.noisegen_mode_2') | int(0) }}"
-    action:
-      - choose:
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'toggle' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/mute/set
-                  payload: "{{ 'OFF' if is_state('switch.mute_2', 'on') else 'ON' }}"
-
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'brightness_up_click' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/gain/set
-                  payload: "{{ [current_gain + 1, 19] | min }}"
-
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'brightness_up_hold' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/gain/set
-                  payload: "{{ [current_gain + 2, 19] | min }}"
-
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'brightness_down_click' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/gain/set
-                  payload: "{{ [current_gain - 1, 0] | max }}"
-
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'brightness_down_hold' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/gain/set
-                  payload: "{{ [current_gain - 2, 0] | max }}"
-
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'arrow_right_click' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/mode/set
-                  payload: "{{ (current_mode + 1) % 4 }}"
-
-          - conditions:
-              - condition: template
-                value_template: "{{ action == 'arrow_left_click' }}"
-            sequence:
-              - action: mqtt.publish
-                data:
-                  topic: bedroom/noise/mode/set
-                  payload: "{{ (current_mode - 1) % 4 }}"
-    mode: queued
-    max: 10
+# No static entities are required.
