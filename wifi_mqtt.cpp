@@ -38,47 +38,21 @@ WiFiManagerParameter* pTempInterval = nullptr;
 
 void savePortalParameters() {
   if (!pMqttServer || !pMqttPort || !pMqttUser || !pMqttPass ||
-      !pDeviceName || !pDeviceName || !pDeviceName ||
-      !pTempEnabled || !pTempInterval) {
-    Serial.println("[CFG] Portal parameter pointers unavailable");
-    return;
-  }
-
+      !pDeviceName || !pTempEnabled || !pTempInterval) return;
   gConfig.mqttServer = pMqttServer->getValue();
   gConfig.mqttPort = pMqttPort->getValue();
   gConfig.mqttUser = pMqttUser->getValue();
   gConfig.mqttPass = pMqttPass->getValue();
   gConfig.deviceName = pDeviceName->getValue();
-
+  gConfig.deviceName.trim();
+  gConfig.deviceName.replace("/", "_");
+  if (!gConfig.deviceName.length()) gConfig.deviceName = "noisegen";
   String tempValue = pTempEnabled->getValue();
   tempValue.trim();
-  gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") ||
-                        tempValue == "1" ||
-                        tempValue.equalsIgnoreCase("true");
-
+  gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") || tempValue == "1" || tempValue.equalsIgnoreCase("true");
   uint32_t interval = String(pTempInterval->getValue()).toInt();
-  if (interval < 1) interval = 30;
-  if (interval > 3600) interval = 3600;
-  gConfig.tempIntervalSec = interval;
-
-  gConfig.mqttServer.trim();
-  gConfig.mqttPort.trim();
-  gConfig.mqttUser.trim();
-  gConfig.mqttPass.trim();
-  (gConfig.deviceName + "/noise").trim();
-  (String("noisegen-") + gConfig.deviceName).trim();
-  (String("noisegen-") + gConfig.deviceName).trim();
-
-  if (!(String("noisegen-") + gConfig.deviceName).length()) (String("noisegen-") + gConfig.deviceName) = "esp32-noise-1";
-  if (!(String("noisegen-") + gConfig.deviceName).length()) (String("noisegen-") + gConfig.deviceName) = (String("noisegen-") + gConfig.deviceName);
-
-  Serial.printf("[CFG] Portal Save: mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\\n",
-                (gConfig.deviceName + "/noise").c_str(),
-                (String("noisegen-") + gConfig.deviceName).c_str(),
-                (String("noisegen-") + gConfig.deviceName).c_str(),
-                gConfig.tempEnabled ? 1 : 0,
-                (unsigned long)gConfig.tempIntervalSec);
-
+  gConfig.tempIntervalSec = constrain(interval, 1u, 3600u);
+  if (!gConfig.tempIntervalSec) gConfig.tempIntervalSec = 30;
   saveConfigToNvs();
 }
 }
@@ -208,18 +182,16 @@ void mqttPublishDiscovery() {
 
 void loadConfigFromNvs() {
   setDefaultConfig();
-
   if (!cfgPrefs.begin("app_cfg", true)) {
     Serial.println("[CFG] NVS unavailable; using built-in defaults");
     return;
   }
-
-  gConfig.wifiSsid   = cfgPrefs.getString("wifiSsid", gConfig.wifiSsid);
-  gConfig.wifiPass   = cfgPrefs.getString("wifiPass", gConfig.wifiPass);
+  gConfig.wifiSsid = cfgPrefs.getString("wifiSsid", gConfig.wifiSsid);
+  gConfig.wifiPass = cfgPrefs.getString("wifiPass", gConfig.wifiPass);
   gConfig.mqttServer = cfgPrefs.getString("mqttServer", gConfig.mqttServer);
-  gConfig.mqttPort   = cfgPrefs.getString("mqttPort", gConfig.mqttPort);
-  gConfig.mqttUser   = cfgPrefs.getString("mqttUser", gConfig.mqttUser);
-  gConfig.mqttPass   = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
+  gConfig.mqttPort = cfgPrefs.getString("mqttPort", gConfig.mqttPort);
+  gConfig.mqttUser = cfgPrefs.getString("mqttUser", gConfig.mqttUser);
+  gConfig.mqttPass = cfgPrefs.getString("mqttPass", gConfig.mqttPass);
   if (cfgPrefs.isKey("deviceName")) {
     gConfig.deviceName = cfgPrefs.getString("deviceName", gConfig.deviceName);
   } else {
@@ -234,21 +206,15 @@ void loadConfigFromNvs() {
       gConfig.deviceName = oldId;
     }
   }
-  if (cfgPrefs.isKey("tempEnabled")) {
-    gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
-  }
-  if (cfgPrefs.isKey("tempInterval")) {
-    gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);
-  }
-  if (gConfig.tempIntervalSec < 1) gConfig.tempIntervalSec = 30;
-  if (!(String("noisegen-") + gConfig.deviceName).length()) (String("noisegen-") + gConfig.deviceName) = (String("noisegen-") + gConfig.deviceName);
+  if (cfgPrefs.isKey("tempEnabled")) gConfig.tempEnabled = cfgPrefs.getBool("tempEnabled", gConfig.tempEnabled);
+  if (cfgPrefs.isKey("tempInterval")) gConfig.tempIntervalSec = cfgPrefs.getUInt("tempInterval", gConfig.tempIntervalSec);
+  gConfig.deviceName.trim();
+  gConfig.deviceName.replace("/", "_");
+  if (!gConfig.deviceName.length()) gConfig.deviceName = "noisegen";
+  if (gConfig.tempIntervalSec < 1 || gConfig.tempIntervalSec > 3600) gConfig.tempIntervalSec = 30;
   cfgPrefs.end();
-
-  Serial.printf("[CFG] Loaded mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\n",
-                (gConfig.deviceName + "/noise").c_str(),
-                (String("noisegen-") + gConfig.deviceName).c_str(),
-                (String("noisegen-") + gConfig.deviceName).c_str(),
-                gConfig.tempEnabled ? 1 : 0,
+  Serial.printf("[CFG] Loaded deviceName=%s tempEnabled=%d tempInterval=%lu\n",
+                gConfig.deviceName.c_str(), gConfig.tempEnabled ? 1 : 0,
                 (unsigned long)gConfig.tempIntervalSec);
   Serial.println("[CFG] Configuration loaded from NVS");
 }
@@ -258,29 +224,19 @@ void saveConfigToNvs() {
     Serial.println("[CFG] NVS unavailable; configuration not saved");
     return;
   }
-
-  cfgPrefs.putString("wifiSsid",   gConfig.wifiSsid.substring(0, 31));
-  cfgPrefs.putString("wifiPass",   gConfig.wifiPass.substring(0, 63));
+  cfgPrefs.putString("wifiSsid", gConfig.wifiSsid.substring(0, 31));
+  cfgPrefs.putString("wifiPass", gConfig.wifiPass.substring(0, 63));
   cfgPrefs.putString("mqttServer", gConfig.mqttServer.substring(0, 31));
-  cfgPrefs.putString("mqttPort",   gConfig.mqttPort.substring(0, 5));
-  cfgPrefs.putString("mqttUser",   gConfig.mqttUser.substring(0, 31));
-  cfgPrefs.putString("mqttPass",   gConfig.mqttPass.substring(0, 63));
-  cfgPrefs.putString("mqttBase",   (gConfig.deviceName + "/noise").substring(0, 63));
-  cfgPrefs.putString("mqttId",     (String("noisegen-") + gConfig.deviceName).substring(0, 31));
-  cfgPrefs.putString("haUniqueId", (String("noisegen-") + gConfig.deviceName).substring(0, 63));
-  cfgPrefs.putBool("tempEnabled",   gConfig.tempEnabled);
-  cfgPrefs.putUInt("tempInterval",   gConfig.tempIntervalSec);
-
-  String savedBase = cfgPrefs.getString("mqttBase", "");
-  String savedId = cfgPrefs.getString("mqttId", "");
-  String savedHa = cfgPrefs.getString("haUniqueId", "");
-  bool savedTemp = cfgPrefs.getBool("tempEnabled", false);
-  uint32_t savedInterval = cfgPrefs.getUInt("tempInterval", 0);
-  Serial.printf("[CFG] Saved mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\n",
-                savedBase.c_str(), savedId.c_str(), savedHa.c_str(),
-                savedTemp ? 1 : 0, (unsigned long)savedInterval);
+  cfgPrefs.putString("mqttPort", gConfig.mqttPort.substring(0, 5));
+  cfgPrefs.putString("mqttUser", gConfig.mqttUser.substring(0, 31));
+  cfgPrefs.putString("mqttPass", gConfig.mqttPass.substring(0, 63));
+  cfgPrefs.putString("deviceName", gConfig.deviceName.substring(0, 31));
+  cfgPrefs.remove("mqttBase");
+  cfgPrefs.remove("mqttId");
+  cfgPrefs.remove("haUniqueId");
+  cfgPrefs.putBool("tempEnabled", gConfig.tempEnabled);
+  cfgPrefs.putUInt("tempInterval", gConfig.tempIntervalSec);
   cfgPrefs.end();
-
   Serial.println("[CFG] Configuration saved to NVS");
 }
 
@@ -445,13 +401,10 @@ void startConfigPortal() {
   Serial.println("[WIFI] Starting config portal...");
   showSetupMode();
   mqtt.setBufferSize(MQTT_PACKET_BUFFER_SIZE);
-
   WiFi.disconnect(true);
   WiFi.mode(WIFI_AP_STA);
   delay(200);
-
   loadConfigFromNvs();
-
   wm.setDebugOutput(true);
   wm.setConfigPortalBlocking(true);
   wm.setBreakAfterConfig(true);
@@ -462,12 +415,7 @@ void startConfigPortal() {
   WiFiManagerParameter p_mqtt_pass("mqtt_pass", "MQTT Password", gConfig.mqttPass.c_str(), 64, "input type=\"password\"");
   WiFiManagerParameter p_device_name("device_name", "Device Name", gConfig.deviceName.c_str(), 31);
   WiFiManagerParameter p_temp_enabled("temp_enabled", "Enable DS18B20 temperature (T/F)", gConfig.tempEnabled ? "T" : "F", 2);
-  WiFiManagerParameter p_temp_interval(
-    "temp_interval",
-    "Temperature update interval (seconds)",
-    String(gConfig.tempIntervalSec).c_str(),
-    6
-  );
+  WiFiManagerParameter p_temp_interval("temp_interval", "Temperature update interval (seconds)", String(gConfig.tempIntervalSec).c_str(), 6);
 
   wm.addParameter(&p_mqtt_server);
   wm.addParameter(&p_mqtt_port);
@@ -477,69 +425,27 @@ void startConfigPortal() {
   wm.addParameter(&p_temp_enabled);
   wm.addParameter(&p_temp_interval);
 
-  pMqttServer = &p_mqtt_server;
-  pMqttPort = &p_mqtt_port;
-  pMqttUser = &p_mqtt_user;
-  pMqttPass = &p_mqtt_pass;
-  pDeviceName = &p_device_name;
-  pTempEnabled = &p_temp_enabled;
-  pTempInterval = &p_temp_interval;
-
+  pMqttServer=&p_mqtt_server; pMqttPort=&p_mqtt_port; pMqttUser=&p_mqtt_user; pMqttPass=&p_mqtt_pass;
+  pDeviceName=&p_device_name; pTempEnabled=&p_temp_enabled; pTempInterval=&p_temp_interval;
   wm.setSaveParamsCallback(savePortalParameters);
 
-  bool ok = wm.startConfigPortal("ESP32-Noise");
-  Serial.printf("[WIFI] Portal finished, ok=%d\n", ok);
-
-  if (ok) {
-    gConfig.wifiSsid = WiFi.SSID();
-    gConfig.wifiPass = WiFi.psk();
-
-    // Custom parameters are persisted by savePortalParameters() when the user presses Save.
-    gConfig.mqttServer = p_mqtt_server.getValue();
-    gConfig.mqttPort   = p_mqtt_port.getValue();
-    gConfig.mqttUser   = p_mqtt_user.getValue();
-    gConfig.mqttPass   = p_mqtt_pass.getValue();
-    (gConfig.deviceName + "/noise")   = .getValue();
-    (String("noisegen-") + gConfig.deviceName)     = .getValue();
-    (String("noisegen-") + gConfig.deviceName) = .getValue();
-    String tempValue = p_temp_enabled.getValue();
-    tempValue.trim();
-    gConfig.tempEnabled = tempValue.equalsIgnoreCase("T") || tempValue == "1" || tempValue.equalsIgnoreCase("true");
-    uint32_t interval = String(p_temp_interval.getValue()).toInt();
-    if (interval < 1) interval = 30;
-    if (interval > 3600) interval = 3600;
-    gConfig.tempIntervalSec = interval;
-
-    gConfig.wifiSsid.trim();
-    gConfig.wifiPass.trim();
-    gConfig.mqttServer.trim();
-    gConfig.mqttPort.trim();
-    gConfig.mqttUser.trim();
-    gConfig.mqttPass.trim();
-    (gConfig.deviceName + "/noise").trim();
-    (String("noisegen-") + gConfig.deviceName).trim();
-    (String("noisegen-") + gConfig.deviceName).trim();
-    if (!(String("noisegen-") + gConfig.deviceName).length()) (String("noisegen-") + gConfig.deviceName) = "esp32-noise-1";
-    if (!(String("noisegen-") + gConfig.deviceName).length()) (String("noisegen-") + gConfig.deviceName) = (String("noisegen-") + gConfig.deviceName);
-
-    Serial.printf("[CFG] Portal values: mqttBase=%s mqttId=%s haUniqueId=%s tempEnabled=%d tempInterval=%lu\n",
-                  (gConfig.deviceName + "/noise").c_str(),
-                  (String("noisegen-") + gConfig.deviceName).c_str(),
-                  (String("noisegen-") + gConfig.deviceName).c_str(),
-                  gConfig.tempEnabled ? 1 : 0,
-                  (unsigned long)gConfig.tempIntervalSec);
-
+  bool ok=wm.startConfigPortal("ESP32-Noise");
+  Serial.printf("[WIFI] Portal finished, ok=%d\n",ok);
+  if(ok){
+    gConfig.wifiSsid=WiFi.SSID(); gConfig.wifiPass=WiFi.psk();
+    gConfig.mqttServer=p_mqtt_server.getValue(); gConfig.mqttPort=p_mqtt_port.getValue();
+    gConfig.mqttUser=p_mqtt_user.getValue(); gConfig.mqttPass=p_mqtt_pass.getValue();
+    gConfig.deviceName=p_device_name.getValue(); gConfig.deviceName.trim(); gConfig.deviceName.replace("/","_");
+    if(!gConfig.deviceName.length()) gConfig.deviceName="noisegen";
+    String tv=p_temp_enabled.getValue(); tv.trim();
+    gConfig.tempEnabled=tv.equalsIgnoreCase("T")||tv=="1"||tv.equalsIgnoreCase("true");
+    uint32_t iv=String(p_temp_interval.getValue()).toInt(); gConfig.tempIntervalSec=constrain(iv,1u,3600u);
     saveConfigToNvs();
-
-    Serial.println("[WIFI] Config saved");
-    mqtt.setServer(gConfig.mqttServer.c_str(), gConfig.mqttPort.toInt());
-    mqtt.setCallback(mqttCallback);
-    mqttReady = true;
+    mqtt.setServer(gConfig.mqttServer.c_str(),gConfig.mqttPort.toInt());
+    mqtt.setCallback(mqttCallback); mqttReady=true;
   }
-
   wm.setDebugOutput(false);
 }
-
 void restoreUiState() {
   if (g_muted) {
     showMute();
