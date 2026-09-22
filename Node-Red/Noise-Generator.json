@@ -1,32 +1,165 @@
 [
   {
-    "id": "mqtt_in_gain",
-    "type": "mqtt in",
+    "id": "tab_noise",
+    "type": "tab",
+    "label": "Noise Generators",
+    "disabled": false,
+    "info": "Generic multi-device ESP32 Noise Generator flow. Add devices only in the Device Registry function."
+  },
+  {
+    "id": "ng_registry",
+    "type": "function",
     "z": "tab_noise",
-    "name": "Gain State",
-    "topic": "bedroom/noise/gain",
-    "qos": "1",
-    "datatype": "auto",
-    "broker": "f6f5c5a8c7bea7e7",
-    "nl": false,
-    "rap": true,
-    "rh": 0,
-    "inputs": 0,
-    "x": 160,
-    "y": 120,
+    "name": "Device Registry",
+    "func": "// Single source of truth for Noise Generator routing.\\n// Add a device here only when another generator is installed.\\nconst devices = {\\n  hroom: { label: 'H Room', base: 'hroom/noise', remote: 'NoiseGen_HRoom' },\\n  mbedroom: { label: 'Master Bedroom', base: 'mbedroom/noise', remote: 'NoiseGen_MBedroom' }\\n};\\nflow.set('noise_devices', devices);\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "const devices = {\\n  hroom: { label: 'H Room', base: 'hroom/noise', remote: 'NoiseGen_HRoom' },\\n  mbedroom: { label: 'Master Bedroom', base: 'mbedroom/noise', remote: 'NoiseGen_MBedroom' }\\n};\\nflow.set('noise_devices', devices);\\n",
+    "finalize": "",
+    "libs": [],
+    "x": 220,
+    "y": 80,
     "wires": [
       [
-        "gain_state_to_ui",
-        "fac299c1596bc9d2"
+        "ng_registry_status"
       ]
     ]
   },
   {
-    "id": "mqtt_in_mode",
+    "id": "ng_registry_inject",
+    "type": "inject",
+    "z": "tab_noise",
+    "name": "Load Device Registry",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.5,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 100,
+    "y": 80,
+    "wires": [
+      [
+        "ng_registry"
+      ]
+    ]
+  },
+  {
+    "id": "ng_registry_status",
+    "type": "debug",
+    "z": "tab_noise",
+    "name": "Registry loaded",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "x": 470,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "ng_device_select",
+    "type": "ui_dropdown",
+    "z": "tab_noise",
+    "name": "Device",
+    "label": "Device",
+    "tooltip": "",
+    "place": "Select device",
+    "group": "ui_group_main",
+    "order": 1,
+    "width": 6,
+    "height": 1,
+    "passthru": true,
+    "multiple": false,
+    "options": [
+      {
+        "label": "H Room",
+        "value": "hroom",
+        "type": "str"
+      },
+      {
+        "label": "Master Bedroom",
+        "value": "mbedroom",
+        "type": "str"
+      }
+    ],
+    "payload": "",
+    "topic": "",
+    "topicType": "str",
+    "className": "",
+    "x": 650,
+    "y": 140,
+    "wires": [
+      [
+        "ng_select_device"
+      ]
+    ]
+  },
+  {
+    "id": "ng_select_device",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Select Device",
+    "func": "const devices = flow.get('noise_devices') || {};\\nif (!devices[msg.payload]) return null;\\nflow.set('noise_selected_device', msg.payload);\\nconst d = devices[msg.payload];\\nmsg.device = msg.payload;\\nmsg.base = d.base;\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 850,
+    "y": 140,
+    "wires": [
+      [
+        "ng_request_state"
+      ]
+    ]
+  },
+  {
+    "id": "ng_request_state",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Selected Device",
+    "func": "const devices = flow.get('noise_devices') || {};\\nconst key = flow.get('noise_selected_device') || 'hroom';\\nconst d = devices[key];\\nif (!d) return null;\\nmsg.payload = `${d.label} (${d.base})`;\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 1050,
+    "y": 140,
+    "wires": [
+      [
+        "ng_device_status"
+      ]
+    ]
+  },
+  {
+    "id": "ng_device_status",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 1,
+    "width": 6,
+    "height": 1,
+    "name": "Selected Device",
+    "label": "Device",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 1250,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "ng_gain_in",
     "type": "mqtt in",
     "z": "tab_noise",
-    "name": "Mode State",
-    "topic": "bedroom/noise/mode",
+    "name": "All Gain State",
+    "topic": "+/noise/gain",
     "qos": "1",
     "datatype": "auto",
     "broker": "f6f5c5a8c7bea7e7",
@@ -35,19 +168,19 @@
     "rh": 0,
     "inputs": 0,
     "x": 150,
-    "y": 200,
+    "y": 240,
     "wires": [
       [
-        "mode_state_to_ui"
+        "ng_state_store"
       ]
     ]
   },
   {
-    "id": "mqtt_in_mute",
+    "id": "ng_mode_in",
     "type": "mqtt in",
     "z": "tab_noise",
-    "name": "Mute State",
-    "topic": "bedroom/noise/mute",
+    "name": "All Mode State",
+    "topic": "+/noise/mode",
     "qos": "1",
     "datatype": "auto",
     "broker": "f6f5c5a8c7bea7e7",
@@ -55,20 +188,62 @@
     "rap": true,
     "rh": 0,
     "inputs": 0,
-    "x": 160,
-    "y": 380,
+    "x": 150,
+    "y": 300,
     "wires": [
       [
-        "mute_state_to_ui"
+        "ng_state_store"
       ]
     ]
   },
   {
-    "id": "mqtt_in_heartbeat",
+    "id": "ng_mute_in",
     "type": "mqtt in",
     "z": "tab_noise",
-    "name": "Heartbeat",
-    "topic": "bedroom/noise/heartbeat",
+    "name": "All Mute State",
+    "topic": "+/noise/mute",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 360,
+    "wires": [
+      [
+        "ng_state_store"
+      ]
+    ]
+  },
+  {
+    "id": "ng_temp_in",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "All Temperature State",
+    "topic": "+/noise/temperature",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "f6f5c5a8c7bea7e7",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 420,
+    "wires": [
+      [
+        "ng_state_store"
+      ]
+    ]
+  },
+  {
+    "id": "ng_hb_in",
+    "type": "mqtt in",
+    "z": "tab_noise",
+    "name": "All Heartbeat",
+    "topic": "+/noise/heartbeat",
     "qos": "0",
     "datatype": "auto",
     "broker": "f6f5c5a8c7bea7e7",
@@ -76,67 +251,76 @@
     "rap": true,
     "rh": 0,
     "inputs": 0,
-    "x": 140,
-    "y": 560,
+    "x": 150,
+    "y": 480,
     "wires": [
       [
-        "heartbeat_to_ui"
+        "ng_state_store"
       ]
     ]
   },
   {
-    "id": "mqtt_out_gain",
-    "type": "mqtt out",
+    "id": "ng_state_store",
+    "type": "function",
     "z": "tab_noise",
-    "name": "Set Gain",
-    "topic": "bedroom/noise/gain/set",
-    "qos": "",
-    "retain": "",
-    "respTopic": "",
-    "contentType": "",
-    "userProps": "",
-    "correl": "",
-    "expiry": "",
-    "broker": "f6f5c5a8c7bea7e7",
-    "x": 1040,
-    "y": 120,
-    "wires": []
+    "name": "Store & Update UI",
+    "func": "const m = msg.topic.match(/^([^/]+)\\/noise\\/([^/]+)$/);\\nif (!m) return null;\\nconst device = m[1];\\nconst kind = m[2];\\nconst states = flow.get('noise_states') || {};\\nstates[device] = states[device] || {};\\nstates[device][kind] = msg.payload;\\nstates[device].last = new Date().toISOString();\\nflow.set('noise_states', states);\\nif (device !== (flow.get('noise_selected_device') || 'hroom')) return null;\\nmsg.device = device;\\nmsg.kind = kind;\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 400,
+    "y": 340,
+    "wires": [
+      [
+        "ng_state_to_ui"
+      ]
+    ]
   },
   {
-    "id": "mqtt_out_mode",
-    "type": "mqtt out",
+    "id": "ng_state_to_ui",
+    "type": "function",
     "z": "tab_noise",
-    "name": "Set Mode",
-    "topic": "bedroom/noise/mode/set",
-    "qos": "",
-    "retain": "",
-    "respTopic": "",
-    "contentType": "",
-    "userProps": "",
-    "correl": "",
-    "expiry": "",
-    "broker": "f6f5c5a8c7bea7e7",
-    "x": 880,
-    "y": 300,
-    "wires": []
+    "name": "State → Selected UI",
+    "func": "const kind = msg.kind;\\nconst value = msg.payload;\\nif (kind === 'gain') {\\n  msg.payload = Number(value);\\n  msg.topic = 'gain';\\n} else if (kind === 'mode') {\\n  const map = {0:'white',1:'pink',2:'brown',3:'blue',White:'white',Pink:'pink',Brown:'brown',Blue:'blue'};\\n  msg.payload = map[value] || String(value).toLowerCase();\\n  msg.topic = 'mode';\\n} else if (kind === 'mute') {\\n  msg.payload = String(value).toUpperCase();\\n  msg.topic = 'mute';\\n} else if (kind === 'temperature') {\\n  const c = Number(value);\\n  if (!Number.isFinite(c)) return null;\\n  msg.payload = c.toFixed(2) + ' °C / ' + (c * 9 / 5 + 32).toFixed(2) + ' °F';\\n  msg.topic = 'temperature';\\n} else if (kind === 'heartbeat') {\\n  msg.payload = 'Last: ' + new Date().toLocaleString('en-US', {timeZone:'America/Denver'});\\n  msg.topic = 'heartbeat';\\n} else return null;\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 650,
+    "y": 340,
+    "wires": [
+      [
+        "ng_route_ui"
+      ]
+    ]
   },
   {
-    "id": "mqtt_out_mute",
-    "type": "mqtt out",
+    "id": "ng_route_ui",
+    "type": "function",
     "z": "tab_noise",
-    "name": "Set Mute",
-    "topic": "bedroom/noise/mute/set",
-    "qos": "",
-    "retain": "",
-    "respTopic": "",
-    "contentType": "",
-    "userProps": "",
-    "correl": "",
-    "expiry": "",
-    "broker": "f6f5c5a8c7bea7e7",
-    "x": 860,
-    "y": 420,
-    "wires": []
+    "name": "Route UI State",
+    "func": "switch (msg.topic) {\\n  case 'gain': return [msg,null,null,null,null];\\n  case 'mode': return [null,msg,null,null,null];\\n  case 'mute': return [null,null,msg,null,null];\\n  case 'temperature': return [null,null,null,msg,null];\\n  case 'heartbeat': return [null,null,null,null,msg];\\n  default: return null;\\n}",
+    "outputs": 5,
+    "noerr": 0,
+    "x": 870,
+    "y": 340,
+    "wires": [
+      [
+        "ui_gain_status",
+        "ui_gain_slider"
+      ],
+      [
+        "ui_mode_status",
+        "ui_mode_select"
+      ],
+      [
+        "ui_mute_status",
+        "ui_mute_switch"
+      ],
+      [
+        "ui_temp_status"
+      ],
+      [
+        "ui_heartbeat_status"
+      ]
+    ]
   },
   {
     "id": "ui_gain_slider",
@@ -146,7 +330,7 @@
     "label": "Gain",
     "tooltip": "",
     "group": "ui_group_main",
-    "order": 1,
+    "order": 2,
     "width": 6,
     "height": 1,
     "passthru": false,
@@ -154,14 +338,14 @@
     "topic": "",
     "topicType": "str",
     "min": 0,
-    "max": 20,
+    "max": 19,
     "step": 1,
     "className": "",
-    "x": 850,
-    "y": 160,
+    "x": 680,
+    "y": 220,
     "wires": [
       [
-        "mqtt_out_gain"
+        "ng_command_gain"
       ]
     ]
   },
@@ -174,7 +358,7 @@
     "tooltip": "",
     "place": "",
     "group": "ui_group_main",
-    "order": 2,
+    "order": 3,
     "width": 6,
     "height": 1,
     "passthru": false,
@@ -182,22 +366,22 @@
     "options": [
       {
         "label": "White",
-        "value": "white",
+        "value": "White",
         "type": "str"
       },
       {
         "label": "Pink",
-        "value": "pink",
+        "value": "Pink",
         "type": "str"
       },
       {
         "label": "Brown",
-        "value": "brown",
+        "value": "Brown",
         "type": "str"
       },
       {
         "label": "Blue",
-        "value": "blue",
+        "value": "Blue",
         "type": "str"
       }
     ],
@@ -205,11 +389,11 @@
     "topic": "",
     "topicType": "str",
     "className": "",
-    "x": 550,
-    "y": 300,
+    "x": 680,
+    "y": 280,
     "wires": [
       [
-        "mqtt_out_mode"
+        "ng_command_mode"
       ]
     ]
   },
@@ -221,7 +405,7 @@
     "label": "Mute",
     "tooltip": "",
     "group": "ui_group_main",
-    "order": 3,
+    "order": 4,
     "width": 6,
     "height": 1,
     "passthru": false,
@@ -233,34 +417,100 @@
     "onvalueType": "str",
     "onicon": "",
     "oncolor": "",
-    "offvalue": "OFF",
+    "offvalue": "",
     "offvalueType": "str",
     "officon": "",
     "offcolor": "",
     "animate": true,
     "className": "",
-    "x": 590,
-    "y": 440,
+    "x": 680,
+    "y": 340,
     "wires": [
       [
-        "mqtt_out_mute"
+        "ng_command_mute"
       ]
     ]
+  },
+  {
+    "id": "ng_command_gain",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Command Gain",
+    "func": "const devices = flow.get('noise_devices') || {};\\nconst key = flow.get('noise_selected_device') || 'hroom';\\nconst d = devices[key];\\nif (!d) return null;\\nmsg.topic = d.base + '/gain/set';\\nmsg.payload = String(Math.max(0, Math.min(19, Number(msg.payload))));\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 900,
+    "y": 220,
+    "wires": [
+      [
+        "ng_mqtt_out"
+      ]
+    ]
+  },
+  {
+    "id": "ng_command_mode",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Command Mode",
+    "func": "const devices = flow.get('noise_devices') || {};\\nconst key = flow.get('noise_selected_device') || 'hroom';\\nconst d = devices[key];\\nif (!d) return null;\\nmsg.topic = d.base + '/mode/set';\\nmsg.payload = String(msg.payload);\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 900,
+    "y": 280,
+    "wires": [
+      [
+        "ng_mqtt_out"
+      ]
+    ]
+  },
+  {
+    "id": "ng_command_mute",
+    "type": "function",
+    "z": "tab_noise",
+    "name": "Command Mute",
+    "func": "const devices = flow.get('noise_devices') || {};\\nconst key = flow.get('noise_selected_device') || 'hroom';\\nconst d = devices[key];\\nif (!d) return null;\\nmsg.topic = d.base + '/mute/set';\\nmsg.payload = String(msg.payload);\\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 900,
+    "y": 340,
+    "wires": [
+      [
+        "ng_mqtt_out"
+      ]
+    ]
+  },
+  {
+    "id": "ng_mqtt_out",
+    "type": "mqtt out",
+    "z": "tab_noise",
+    "name": "Send Command",
+    "topic": "",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "f6f5c5a8c7bea7",
+    "x": 1110,
+    "y": 280,
+    "wires": []
   },
   {
     "id": "ui_gain_status",
     "type": "ui_text",
     "z": "tab_noise",
     "group": "ui_group_status",
-    "order": 1,
+    "order": 2,
     "width": 6,
     "height": 1,
     "name": "Gain Status",
     "label": "Gain",
     "format": "{{msg.payload}}",
     "layout": "row-spread",
-    "x": 750,
-    "y": 240,
+    "x": 1120,
+    "y": 400,
     "wires": []
   },
   {
@@ -268,15 +518,15 @@
     "type": "ui_text",
     "z": "tab_noise",
     "group": "ui_group_status",
-    "order": 2,
+    "order": 3,
     "width": 6,
     "height": 1,
     "name": "Mode Status",
     "label": "Mode",
     "format": "{{msg.payload}}",
     "layout": "row-spread",
-    "x": 670,
-    "y": 340,
+    "x": 1120,
+    "y": 440,
     "wires": []
   },
   {
@@ -284,15 +534,31 @@
     "type": "ui_text",
     "z": "tab_noise",
     "group": "ui_group_status",
-    "order": 3,
+    "order": 4,
     "width": 6,
     "height": 1,
     "name": "Mute Status",
     "label": "Mute",
     "format": "{{msg.payload}}",
     "layout": "row-spread",
-    "x": 670,
-    "y": 500,
+    "x": 1120,
+    "y": 480,
+    "wires": []
+  },
+  {
+    "id": "ui_temp_status",
+    "type": "ui_text",
+    "z": "tab_noise",
+    "group": "ui_group_status",
+    "order": 5,
+    "width": 6,
+    "height": 1,
+    "name": "Temperature",
+    "label": "Temperature",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 1120,
+    "y": 520,
     "wires": []
   },
   {
@@ -300,106 +566,41 @@
     "type": "ui_text",
     "z": "tab_noise",
     "group": "ui_group_status",
-    "order": 4,
+    "order": 6,
     "width": 6,
     "height": 1,
     "name": "Heartbeat",
     "label": "Heartbeat",
     "format": "{{msg.payload}}",
     "layout": "row-spread",
-    "x": 680,
+    "x": 1120,
     "y": 560,
     "wires": []
   },
   {
-    "id": "gain_state_to_ui",
-    "type": "function",
-    "z": "tab_noise",
-    "name": "Gain → UI",
-    "func": "msg.payload = Number(msg.payload);\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 630,
-    "y": 180,
-    "wires": [
-      [
-        "ui_gain_status",
-        "ui_gain_slider"
-      ]
-    ]
+    "id": "ui_group_main",
+    "type": "ui_group",
+    "name": "Controls",
+    "tab": "ui_tab_noise",
+    "order": 1,
+    "disp": true,
+    "width": "6"
   },
   {
-    "id": "mode_state_to_ui",
-    "type": "function",
-    "z": "tab_noise",
-    "name": "Mode → UI",
-    "func": "const map = {\n  0: 'white',\n  1: 'pink',\n  2: 'brown',\n  3: 'blue'\n};\nconst n = Number(msg.payload);\nmsg.payload = map[n] || msg.payload;\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "x": 370,
-    "y": 320,
-    "wires": [
-      [
-        "ui_mode_status",
-        "ui_mode_select"
-      ]
-    ]
+    "id": "ui_group_status",
+    "type": "ui_group",
+    "name": "Status",
+    "tab": "ui_tab_noise",
+    "order": 2,
+    "disp": true,
+    "width": "6"
   },
   {
-    "id": "mute_state_to_ui",
-    "type": "function",
-    "z": "tab_noise",
-    "name": "Mute → UI",
-    "func": "msg.payload = String(msg.payload);\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "x": 350,
-    "y": 480,
-    "wires": [
-      [
-        "ui_mute_status",
-        "ui_mute_switch"
-      ]
-    ]
-  },
-  {
-    "id": "heartbeat_to_ui",
-    "type": "function",
-    "z": "tab_noise",
-    "name": "Heartbeat → UI",
-    "func": "// msg.payload = `Last: ${new Date().toLocaleTimeString()})}`;\nvar now = new Date();\nvar date = now.toLocaleDateString('en-US', { timeZone: 'America/Denver' });\nvar time = now.toLocaleTimeString('en-US', { timeZone: 'America/Denver' });\n\nmsg.payload =\"Last: \" + date + \"   \" + time;\nreturn msg;",
-    "outputs": 1,
-    "timeout": "",
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 340,
-    "y": 560,
-    "wires": [
-      [
-        "ui_heartbeat_status"
-      ]
-    ]
-  },
-  {
-    "id": "fac299c1596bc9d2",
-    "type": "debug",
-    "z": "tab_noise",
-    "name": "debug 9",
-    "active": true,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "false",
-    "statusVal": "",
-    "statusType": "auto",
-    "x": 480,
-    "y": 60,
-    "wires": []
+    "id": "ui_tab_noise",
+    "type": "ui_tab",
+    "name": "Noise Generators",
+    "icon": "volume_up",
+    "order": 1
   },
   {
     "id": "f6f5c5a8c7bea7e7",
@@ -431,31 +632,6 @@
     "willMsg": {},
     "userProps": "",
     "sessionExpiry": ""
-  },
-  {
-    "id": "ui_group_main",
-    "type": "ui_group",
-    "name": "Controls",
-    "tab": "ui_tab_noise",
-    "order": 1,
-    "disp": true,
-    "width": "6"
-  },
-  {
-    "id": "ui_group_status",
-    "type": "ui_group",
-    "name": "Status",
-    "tab": "ui_tab_noise",
-    "order": 2,
-    "disp": true,
-    "width": "6"
-  },
-  {
-    "id": "ui_tab_noise",
-    "type": "ui_tab",
-    "name": "Bedroom Noise",
-    "icon": "volume_up",
-    "order": 1
   },
   {
     "id": "af4d98c14b34501d",
